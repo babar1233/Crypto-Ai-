@@ -1,243 +1,142 @@
-
-Render strat section.
-
-OK writing final answer now. Also remember getSignal stores lastSig for calculator using strat entry? Keep lastSig from R.side signal (price, sl) as before.
-
-Also update `$('cvSym')` on symbol change; call drawChart in getSignal after kCache set.
-
-Also on strict/obOnly change: reanalyzeAll() + getSignal() — but getSignal refetches (fine).
-
-Length is big; let's write efficiently. I'll aim for clean, consistent code. Also keep `fmt` and `money` same.
-
-Potential pitfall: `ema` returns nulls; chart line handles null.
-
-In findOrderBlocks add idx:i to pushed objects.
-
-marketStructure returns sw (swings) — used for eqLevels.
-
-eqLevels(pts, A): pts sorted chronologically; take last 12; pairs within 0.15A → average; dedupe-ish; return last 2.
-
-premiumDiscount(H,L,price,look=150): hi=max last 150, lo=min, pos=(price-lo)/(hi-lo)*100, zone: pos>55 Premium, <45 Discount, else Equilibrium.
-
-Let me make sure renderMarket pill WAIT style exists (.WAIT defined). Yes.
-
-Now produce final HTML. I'll write it in full. Estimated ~950 lines. Go.
-
-Also: the previous assistant message offered review notes; the user asked to fix everything — I should ensure the fixes are in (tf-keyed cache, scan rate smoothing, etc.) and mention them briefly after code.
-
-Also handle scan while tf changed mid-scan: key uses tf captured at scan start — results stored with that tf; renderMarket filters by current tf. Good.
-
-Write code:
-
-Careful about apostrophes in JS strings — use standard.
-
-For Bybit ping: Bybit v5 requires ping every 20s or server disconnects. ok.
-
-Final structure of script sections:
-1 consts/state
-2 utils fmt/money/sleep
-3 indicators
-4 SMC: swings, marketStructure, findOrderBlocks, findFVG, eqLevels, premiumDiscount
-5 analyze + buildStrat + backtest
-6 fetchK
-7 getSignal + renders (signal card incl strat+backtest, renderSMC, renderOB, renderLive, renderWhales, renderLiq, renderMarket, drawChart, updateSize)
-8 scanner
-9 websockets (allMini, agg, forceOrder, bybit, okx)
-10 events + init
-
-Let me write everything now, double-checking brackets.
-
-For the chart volume area: priceH = H - volH(56) - 20; y maps within 8..priceH-8. volume bars at bottom area from H-20 up to volH. Time labels at H-6. OK.
-
-Crosshair horizontal label skip.
-
-For structure event label y-position: use candle extreme: for dir===1 place below bar low: y(L[ev.i])+14; else above high: y(H[ev.i])-8. Need H,L arrays inside drawChart — I have data; use +data[ev.i-start][3] etc.
-
-Also guard ev.i-start within 0..N-1.
-
-OK also add "CHoCH" chip in SMC card prominently since user asked "trend change of character".
-
-Time to write the answer. Also brief bullet summary after code (what's new + usage + notes). Keep concise since code is huge.Complete file — all problems fixed + chart, SMC (BOS/CHoCH, FVG, liquidity, premium/discount), whale tracking, structure scoring, strategy checklist aur backtest added. Puraana code replace kar do isse:
-
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crypto Futures Dashboard - Signals, SMC, Whales, Multi-Exchange Liquidations</title>
+<title>Crypto Futures Pro Dashboard</title>
 <style>
   :root { --bg:#0b0e14; --card:#151a23; --line:#232b38; --text:#e6e9ef; --mute:#8b94a5;
           --green:#16c784; --red:#ea3943; --yellow:#f0b90b; --blue:#4c8dff; --purple:#a78bfa; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
-  .wrap { max-width:1150px; margin:0 auto; padding:16px 14px 60px; }
-  h1 { font-size:21px; margin:6px 0 4px; }
-  h2 { font-size:15px; margin:0 0 10px; }
-  .sub { color:var(--mute); font-size:13px; }
-  .status { display:flex; gap:14px; flex-wrap:wrap; margin:6px 0 14px; font-size:12px; color:var(--mute); }
-  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--red); margin-right:5px; }
+  .wrap { max-width:1200px; margin:0 auto; padding:12px 10px 50px; }
+  h1 { font-size:19px; margin:4px 0 2px; }
+  h2 { font-size:14px; margin:0 0 8px; }
+  .sub { color:var(--mute); font-size:12px; }
+  .status { display:flex; gap:12px; flex-wrap:wrap; margin:6px 0 10px; font-size:11px; color:var(--mute); }
+  .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--red); margin-right:4px; }
   .dot.on { background:var(--green); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:14px; margin-bottom:14px; }
-  .cols { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
-  @media (max-width:800px) { .cols { grid-template-columns:1fr; } }
-  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px; }
+  .cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  @media (max-width:850px) { .cols { grid-template-columns:1fr; } }
+  .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
   select, input[type=text], input[type=number], button { background:#0f131b; color:var(--text); border:1px solid var(--line);
-          border-radius:8px; padding:10px 12px; font-size:15px; }
-  select, input[type=text], input[type=number] { flex:1; min-width:110px; }
+          border-radius:6px; padding:8px 10px; font-size:14px; }
+  select, input[type=text], input[type=number] { flex:1; min-width:90px; }
   button { background:var(--yellow); color:#111; border:none; font-weight:700; cursor:pointer; }
-  button:disabled { opacity:.6; cursor:wait; }
-  label.chk { font-size:13px; color:var(--mute); display:flex; align-items:center; gap:6px; }
-  .price { font-size:34px; font-weight:800; font-variant-numeric:tabular-nums; }
+  button:disabled { opacity:.5; cursor:wait; }
+  label.chk { font-size:12px; color:var(--mute); display:flex; align-items:center; gap:5px; }
+  .price { font-size:30px; font-weight:800; font-variant-numeric:tabular-nums; }
   .up { color:var(--green); } .down { color:var(--red); }
-  .badge { display:inline-block; padding:8px 18px; border-radius:8px; font-weight:800; font-size:22px; margin:6px 0 12px; }
-  .badge small { font-size:12px; font-weight:600; margin-left:8px; opacity:.85; }
+  .badge { display:inline-block; padding:6px 14px; border-radius:6px; font-weight:800; font-size:20px; margin:4px 0 8px; }
+  .badge small { font-size:11px; font-weight:600; margin-left:6px; opacity:.85; }
   .LONG { background:rgba(22,199,132,.15); color:var(--green); }
   .SHORT { background:rgba(234,57,67,.15); color:var(--red); }
   .WAIT { background:rgba(240,185,11,.15); color:var(--yellow); }
-  .pill { display:inline-block; padding:2px 8px; border-radius:6px; font-weight:700; font-size:11px; white-space:nowrap; }
-  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; }
-  .item { background:#0f131b; border:1px solid var(--line); border-radius:8px; padding:10px; }
-  .item span { display:block; color:var(--mute); font-size:12px; margin-bottom:2px; }
-  .item b { font-size:15px; }
-  ul { margin:8px 0 0 18px; padding:0; color:var(--mute); font-size:13px; }
-  .warn { border-color:#5a4a12; background:#1b1708; color:#e9d48a; font-size:13px; line-height:1.5; }
-  .err { color:var(--red); font-size:14px; }
-  table { width:100%; border-collapse:collapse; font-size:13px; font-variant-numeric:tabular-nums; }
-  th, td { padding:7px 6px; text-align:right; border-bottom:1px solid var(--line); }
+  .pill { display:inline-block; padding:2px 6px; border-radius:4px; font-weight:700; font-size:10px; }
+  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
+  .item { background:#0f131b; border:1px solid var(--line); border-radius:6px; padding:8px; }
+  .item span { display:block; color:var(--mute); font-size:11px; margin-bottom:2px; }
+  .item b { font-size:14px; }
+  ul { margin:6px 0 0 16px; padding:0; color:var(--mute); font-size:12px; }
+  table { width:100%; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; }
+  th, td { padding:6px 4px; text-align:right; border-bottom:1px solid var(--line); }
   th:nth-child(-n+2), td:nth-child(-n+2) { text-align:left; }
   th { color:var(--mute); font-weight:600; position:sticky; top:0; background:var(--card); }
   tr.clickable { cursor:pointer; } tr.clickable:hover { background:#1c2330; }
   tr.sel { background:#202a3b; }
-  .scroll { max-height:420px; overflow:auto; }
-  .ob { display:flex; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:8px; margin-bottom:6px;
-        background:#0f131b; border-left:4px solid; font-size:13px; }
+  .scroll { max-height:360px; overflow:auto; }
+  .ob { display:flex; justify-content:space-between; gap:6px; padding:6px 8px; border-radius:6px; margin-bottom:5px;
+        background:#0f131b; border-left:3px solid; font-size:12px; }
   .ob.bull { border-color:var(--green); } .ob.bear { border-color:var(--red); }
   .ob small { color:var(--mute); display:block; }
-  .tot { display:flex; gap:10px; margin-bottom:8px; }
-  .tot .item { flex:1; }
-  .big { background:rgba(240,185,11,.08); }
-  .ex { font-size:11px; color:var(--blue); font-weight:700; }
-  .leg { font-size:11px; color:var(--mute); }
-  .leg b { font-weight:700; }
-  #cv { width:100%; height:420px; display:block; cursor:crosshair; }
-  .chk-item { display:flex; gap:8px; align-items:flex-start; font-size:13px; padding:4px 0; color:var(--mute); }
-  .chk-item.ok { color:var(--text); }
-  .bar { height:8px; border-radius:4px; background:#0f131b; overflow:hidden; margin-top:6px; }
-  .bar i { display:block; height:100%; }
-  .flow { display:flex; height:10px; border-radius:5px; overflow:hidden; margin-top:6px; }
-  .ev { display:inline-block; padding:2px 8px; border-radius:6px; font-size:11px; font-weight:700; margin:2px 3px 2px 0; background:#0f131b; border:1px solid var(--line); }
-  .ev.c { border-color:var(--yellow); color:var(--yellow); }
-  .ev.u { border-color:var(--green); color:var(--green); }
-  .ev.d { border-color:var(--red); color:var(--red); }
+  #cv { width:100%; height:460px; display:block; cursor:crosshair; background:#0b0e14; border-radius:6px; }
+  .flow { display:flex; height:8px; border-radius:4px; overflow:hidden; margin-top:4px; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Crypto Futures Dashboard</h1>
-  <div class="sub">Live price · Signals · SMC (BOS/CHoCH, Order Blocks, FVG, Liquidity) · Whale trades · Scanner · Binance + Bybit + OKX liquidations</div>
+  <h1>Crypto Futures Pro Dashboard</h1>
+  <div class="sub">Live Moving Candles · High Accuracy Confluence Signals · Complete Timeframes · Volume & SMC Structure</div>
+  
   <div class="status">
-    <div><span class="dot" id="dPrice"></span>Live price</div>
-    <div><span class="dot" id="dLiq"></span>Binance liq</div>
-    <div><span class="dot" id="dBybit"></span>Bybit liq</div>
-    <div><span class="dot" id="dOkx"></span>OKX liq</div>
+    <div><span class="dot" id="dPrice"></span>Live Feed</div>
+    <div><span class="dot" id="dCandle"></span>Candle WebSocket</div>
+    <div><span class="dot" id="dLiq"></span>Liquidation</div>
   </div>
 
   <div class="card">
     <div class="row">
       <select id="symbol"></select>
       <select id="tf">
-        <option value="15m">15 minutes</option>
-        <option value="1h" selected>1 hour</option>
+        <option value="1m">1 minute</option>
+        <option value="3m">3 minutes</option>
+        <option value="5m">5 minutes</option>
+        <option value="15m" selected>15 minutes</option>
+        <option value="30m">30 minutes</option>
+        <option value="1h">1 hour</option>
+        <option value="2h">2 hours</option>
         <option value="4h">4 hours</option>
+        <option value="6h">6 hours</option>
+        <option value="8h">8 hours</option>
+        <option value="12h">12 hours</option>
+        <option value="1d">1 day</option>
+        <option value="3d">3 days</option>
+        <option value="1w">1 week</option>
       </select>
-      <button id="go">Get signal</button>
+      <button id="go">Recalculate Signal</button>
     </div>
-    <div class="row" style="margin-top:10px">
-      <label class="chk"><input type="checkbox" id="strict"> Strict mode (tight rules, kam signal)</label>
-      <label class="chk"><input type="checkbox" id="obOnly"> Sirf Order Block confluence wale signal</label>
+    <div class="row" style="margin-top:8px">
+      <label class="chk"><input type="checkbox" id="strict" checked> Ultra Strict Mode (Multi-Confluence Only)</label>
+      <label class="chk"><input type="checkbox" id="obOnly"> Require Order Block Retest</label>
     </div>
   </div>
 
   <div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:4px">
-      <h2 style="margin:0">Chart — <span id="cvSym">BTCUSDT</span></h2>
-      <div class="leg">
-        <b style="color:var(--yellow)">—</b> EMA9 <b style="color:var(--blue)">—</b> EMA21 <b style="color:var(--purple)">—</b> EMA50
-        · 🟩/🟥 zones = Order Blocks · 🟦/🟧 = FVG · labels = BOS/CHoCH
+      <h2 style="margin:0">Live Chart — <span id="cvSym">BTCUSDT</span> (<span id="cvTf">15m</span>)</h2>
+      <div class="sub">
+        <span style="color:var(--yellow)">— EMA9</span> | <span style="color:var(--blue)">— EMA21</span> | <span style="color:var(--purple)">— EMA50</span>
       </div>
     </div>
-    <div class="sub" id="ohlc" style="margin-bottom:4px">Chart load ho raha hai...</div>
+    <div class="sub" id="ohlc" style="margin-bottom:6px">Connecting live candle stream...</div>
     <canvas id="cv"></canvas>
   </div>
 
   <div class="cols">
     <div>
-      <div class="card" id="live"><div class="sub">Live price load ho raha hai...</div></div>
+      <div class="card" id="live"><div class="sub">Loading live data...</div></div>
       <div id="result"></div>
-      <div class="card">
-        <h2>Whale trades 🐋 (bade market orders, live)</h2>
-        <div id="whaleSum" class="sub" style="margin-bottom:8px">Trades sun rahe hain...</div>
-        <div class="scroll" style="max-height:220px">
-          <table><thead><tr><th>Time</th><th>Side</th><th>Price</th><th>USD</th></tr></thead>
-          <tbody id="whaleFeed"><tr><td colspan="4" class="sub">Whale ka wait hai...</td></tr></tbody></table>
-        </div>
-      </div>
     </div>
     <div>
       <div class="card">
-        <h2>SMC / Price Action</h2>
-        <div id="smcBox" class="sub">Signal load hone ke baad dikhega.</div>
+        <h2>SMC & Liquidity Confluence</h2>
+        <div id="smcBox" class="sub">Awaiting signal calculation...</div>
       </div>
       <div class="card">
-        <h2>Order Blocks (unmitigated)</h2>
-        <div id="obBox" class="sub">Signal load hone ke baad dikhenge.</div>
-      </div>
-      <div class="card">
-        <h2>Live Liquidations (Binance + Bybit + OKX)</h2>
-        <div id="liqTot" class="tot"></div>
-        <div id="liqEx" class="sub" style="margin-bottom:8px"></div>
-        <label class="chk" style="margin-bottom:8px"><input type="checkbox" id="liqSel"> Sirf selected coin</label>
-        <div class="scroll" style="max-height:260px">
-          <table><thead><tr><th>Time</th><th>Exch</th><th>Coin</th><th>Type</th><th>Price</th><th>USD</th></tr></thead>
-          <tbody id="liqFeed"><tr><td colspan="6" class="sub">Liquidation ka wait hai...</td></tr></tbody></table>
-        </div>
+        <h2>Order Blocks (Institutional Footprints)</h2>
+        <div id="obBox" class="sub">Awaiting candles...</div>
       </div>
     </div>
   </div>
 
   <div class="card">
     <div class="row" style="margin-bottom:6px">
-      <h2 style="margin:0">Top 150 coins + Signal scanner</h2>
-      <input type="text" id="search" placeholder="Coin search (BTC, SOL...)">
-      <select id="mfilter" style="max-width:190px">
-        <option value="all">Sab coins</option>
-        <option value="sig">Sirf signal wale</option>
-        <option value="long">Sirf LONG</option>
-        <option value="short">Sirf SHORT</option>
+      <h2 style="margin:0">Market Scanner (Top 150)</h2>
+      <input type="text" id="search" placeholder="Search (BTC, SOL...)">
+      <select id="mfilter" style="max-width:160px">
+        <option value="all">All Coins</option>
+        <option value="sig">Active Signals</option>
+        <option value="long">LONG Only</option>
+        <option value="short">SHORT Only</option>
       </select>
-      <button id="scanBtn">Scan 150 coins</button>
+      <button id="scanBtn">Scan Top 150</button>
     </div>
-    <div class="sub" id="scanInfo" style="margin-bottom:8px"></div>
+    <div class="sub" id="scanInfo" style="margin-bottom:6px"></div>
     <div class="scroll">
       <table><thead><tr><th>#</th><th>Coin</th><th>Price</th><th>24h %</th><th>Signal</th><th>Score</th><th>24h Volume</th></tr></thead>
-      <tbody id="mkt"><tr><td colspan="7" class="sub">Loading...</td></tr></tbody></table>
+      <tbody id="mkt"><tr><td colspan="7" class="sub">Loading market...</td></tr></tbody></table>
     </div>
-  </div>
-
-  <div class="card">
-    <h2>Position size calculator</h2>
-    <div class="row">
-      <input id="equity" type="number" placeholder="Account equity (USDT)" value="1000">
-      <input id="riskPct" type="number" step="0.1" placeholder="Risk % per trade" value="1">
-    </div>
-    <div id="sizeOut" class="sub" style="margin-top:10px">Pehle signal lo, size yahan dikhega.</div>
-  </div>
-
-  <div class="card warn">
-    <b>Risk warning:</b> Ye educational tool hai, financial advice nahi. Signal ka matlab profit nahi hota.
-    Relaxed mode me signal zyada aate hain, lekin accuracy ki guarantee nahi hai. Leverage futures me poora balance ud sakta hai.
-    Fees, funding aur slippage include nahi hain. Real money se pehle backtest aur paper trade karo.
   </div>
 </div>
 
@@ -247,560 +146,159 @@ const WSB  = "wss://fstream.binance.com/ws/";
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-let coins = [];
-let prices = {};
-let sel = "BTCUSDT";
-let obs = null;
-let lastSig = null;
-let liqs = [];
-let whales = [];
-let liveDir = "";
-let reqId = 0;
-let kCache = {};       // "SYM_tf" -> closed klines
-let results = {};      // symbol -> analysis (with tf)
-let scanId = 0;
-let dirty = false;
-let chartMouse = null;
-let wsAgg = null;
-let bybitSyms = [];
+let coins = [], prices = {}, sel = "BTCUSDT", obs = null, lastSig = null;
+let kCache = {}, results = {}, reqId = 0, scanId = 0, chartMouse = null;
+let wsCandle = null, curCandle = null, wsMini = null;
 
-const fmt = x => x >= 100 ? x.toFixed(2) : x >= 1 ? x.toFixed(4) : x >= 0.01 ? x.toFixed(5) : x.toFixed(8);
-const money = x => x >= 1e9 ? (x/1e9).toFixed(2)+"B" : x >= 1e6 ? (x/1e6).toFixed(2)+"M" : x >= 1e3 ? (x/1e3).toFixed(1)+"K" : x.toFixed(0);
-const tstr = t => new Date(t).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
+const fmt = x => x >= 100 ? x.toFixed(2) : x >= 1 ? x.toFixed(4) : x >= 0.001 ? x.toFixed(5) : x.toFixed(8);
+const money = x => x >= 1e9 ? (x/1e9).toFixed(2)+"B" : x >= 1e6 ? (x/1e6).toFixed(2)+"M" : (x/1e3).toFixed(1)+"K";
 const curTf = () => $("tf").value;
-const key = (s, tf) => s + "_" + tf;
+const key = (s, tf) => `${s}_${tf}`;
 
-/* ---------- Indicators ---------- */
-function ema(vals, n) {
-  const out = new Array(vals.length).fill(null);
-  if (vals.length < n) return out;
+/* Indicators */
+function ema(arr, n) {
+  const out = new Array(arr.length).fill(null);
+  if (arr.length < n) return out;
   let sum = 0;
-  for (let i = 0; i < n; i++) sum += vals[i];
+  for (let i = 0; i < n; i++) sum += arr[i];
   out[n-1] = sum / n;
   const k = 2 / (n + 1);
-  for (let i = n; i < vals.length; i++) out[i] = vals[i] * k + out[i-1] * (1 - k);
+  for (let i = n; i < arr.length; i++) out[i] = arr[i] * k + out[i-1] * (1 - k);
   return out;
 }
-function rsi(close, n = 14) {
-  const out = new Array(close.length).fill(null);
+function rsi(c, n = 14) {
+  const out = new Array(c.length).fill(null);
   let g = 0, l = 0;
-  for (let i = 1; i <= n; i++) { const d = close[i] - close[i-1]; if (d >= 0) g += d; else l -= d; }
+  for (let i = 1; i <= n; i++) { const d = c[i] - c[i-1]; if (d >= 0) g += d; else l -= d; }
   g /= n; l /= n;
   out[n] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
-  for (let i = n + 1; i < close.length; i++) {
-    const d = close[i] - close[i-1];
-    g = (g * (n-1) + Math.max(d, 0)) / n;
-    l = (l * (n-1) + Math.max(-d, 0)) / n;
+  for (let i = n + 1; i < c.length; i++) {
+    const d = c[i] - c[i-1];
+    g = (g * (n - 1) + Math.max(d, 0)) / n;
+    l = (l * (n - 1) + Math.max(-d, 0)) / n;
     out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
   }
   return out;
 }
-function atr(h, lo, c, n = 14) {
-  const tr = [h[0] - lo[0]];
-  for (let i = 1; i < c.length; i++)
-    tr.push(Math.max(h[i] - lo[i], Math.abs(h[i] - c[i-1]), Math.abs(lo[i] - c[i-1])));
+function atr(h, l, c, n = 14) {
+  const tr = [h[0] - l[0]];
+  for (let i = 1; i < c.length; i++) tr.push(Math.max(h[i] - l[i], Math.abs(h[i] - c[i-1]), Math.abs(l[i] - c[i-1])));
   const out = new Array(c.length).fill(null);
-  let a = 0;
-  for (let i = 0; i < n; i++) a += tr[i];
-  a /= n; out[n-1] = a;
-  for (let i = n; i < c.length; i++) { a = (a * (n-1) + tr[i]) / n; out[i] = a; }
+  let s = 0;
+  for (let i = 0; i < n; i++) s += tr[i];
+  out[n-1] = s / n;
+  for (let i = n; i < c.length; i++) out[i] = (out[i-1] * (n - 1) + tr[i]) / n;
   return out;
 }
 
-/* ---------- SMC: swings, structure, OB, FVG, liquidity ---------- */
-function swings(H, L, w = 3) {
-  const hi = [], lo = [];
-  for (let i = w; i < H.length - w; i++) {
-    let isH = true, isL = true;
-    for (let j = i - w; j <= i + w; j++) {
-      if (j === i) continue;
-      if (H[j] >= H[i]) isH = false;
-      if (L[j] <= L[i]) isL = false;
-    }
-    if (isH) hi.push({ i, p: H[i] });
-    if (isL) lo.push({ i, p: L[i] });
-  }
-  return { hi, lo };
-}
-function marketStructure(T, H, L, C) {
-  const w = 3, n = C.length, sw = swings(H, L, w);
-  const evs = [];
-  let hiP = null, loP = null, trend = 0, hp = 0, lp = 0;
-  for (let i = 0; i < n; i++) {
-    while (hp < sw.hi.length && sw.hi[hp].i + w <= i) { hiP = sw.hi[hp++].p; }
-    while (lp < sw.lo.length && sw.lo[lp].i + w <= i) { loP = sw.lo[lp++].p; }
-    if (hiP != null && C[i] > hiP) {
-      evs.push({ i, p: hiP, dir: 1, type: trend === -1 ? "CHoCH" : "BOS" });
-      trend = 1; hiP = null;
-    }
-    if (loP != null && C[i] < loP) {
-      evs.push({ i, p: loP, dir: -1, type: trend === 1 ? "CHoCH" : "BOS" });
-      trend = -1; loP = null;
-    }
-  }
-  const conf = sw.hi.filter(s => s.i + w <= n - 1), confl = sw.lo.filter(s => s.i + w <= n - 1);
-  return { trend, evs: evs.slice(-6), lastH: conf.pop() || null, lastL: confl.pop() || null, sw };
-}
+/* Advanced SMC & Order Blocks */
 function findOrderBlocks(t, o, h, l, c, a) {
   const n = c.length, bulls = [], bears = [];
   for (let i = 15; i < n - 2; i++) {
     if (a[i] == null) continue;
-    const end = Math.min(i + 3, n - 1);
-    let prevHigh = -Infinity, prevLow = Infinity;
-    for (let j = i - 10; j < i; j++) { prevHigh = Math.max(prevHigh, h[j]); prevLow = Math.min(prevLow, l[j]); }
-    if (c[i] < o[i] && c[i+1] > o[i+1]) {
-      let maxH = -Infinity, bos = false;
-      for (let j = i + 1; j <= end; j++) { maxH = Math.max(maxH, h[j]); if (c[j] > prevHigh) bos = true; }
-      if (bos && maxH - c[i] >= 2 * a[i]) {
-        let mit = false;
-        for (let j = end + 1; j < n; j++) if (c[j] < l[i]) { mit = true; break; }
-        if (!mit) bulls.push({ type:"bull", top:h[i], bottom:l[i], time:t[i], idx:i });
-      }
+    if (c[i] < o[i] && c[i+1] > o[i+1] && (h[i+1] - l[i+1] >= 1.2 * a[i])) {
+      let mit = false;
+      for (let j = i + 2; j < n; j++) if (c[j] < l[i]) { mit = true; break; }
+      if (!mit) bulls.push({ type:"bull", top:h[i], bottom:l[i], time:t[i], idx:i });
     }
-    if (c[i] > o[i] && c[i+1] < o[i+1]) {
-      let minL = Infinity, bos = false;
-      for (let j = i + 1; j <= end; j++) { minL = Math.min(minL, l[j]); if (c[j] < prevLow) bos = true; }
-      if (bos && c[i] - minL >= 2 * a[i]) {
-        let mit = false;
-        for (let j = end + 1; j < n; j++) if (c[j] > h[i]) { mit = true; break; }
-        if (!mit) bears.push({ type:"bear", top:h[i], bottom:l[i], time:t[i], idx:i });
-      }
+    if (c[i] > o[i] && c[i+1] < o[i+1] && (h[i+1] - l[i+1] >= 1.2 * a[i])) {
+      let mit = false;
+      for (let j = i + 2; j < n; j++) if (c[j] > h[i]) { mit = true; break; }
+      if (!mit) bears.push({ type:"bear", top:h[i], bottom:l[i], time:t[i], idx:i });
     }
   }
-  const price = c[n-1];
-  const dist = b => price > b.top ? price - b.top : price < b.bottom ? b.bottom - price : 0;
-  bulls.sort((x, y) => dist(x) - dist(y));
-  bears.sort((x, y) => dist(x) - dist(y));
+  const px = c[n-1];
+  bulls.sort((x, y) => Math.abs(px - x.top) - Math.abs(px - y.top));
+  bears.sort((x, y) => Math.abs(px - x.bottom) - Math.abs(px - y.bottom));
   return { bulls: bulls.slice(0, 3), bears: bears.slice(0, 3) };
 }
-function findFVG(t, h, l, c, a) {
-  const n = c.length, bull = [], bear = [];
-  for (let i = 0; i < n - 2; i++) {
-    if (l[i+2] > h[i]) {
-      const size = l[i+2] - h[i];
-      if (a[i+1] == null || size < 0.1 * a[i+1]) continue;
-      let mit = false;
-      for (let j = i + 3; j < n; j++) if (l[j] <= h[i]) { mit = true; break; }
-      if (!mit) bull.push({ top: l[i+2], bottom: h[i], idx: i+1 });
-    }
-    if (h[i+2] < l[i]) {
-      const size = l[i] - h[i+2];
-      if (a[i+1] == null || size < 0.1 * a[i+1]) continue;
-      let mit = false;
-      for (let j = i + 3; j < n; j++) if (h[j] >= l[i]) { mit = true; break; }
-      if (!mit) bear.push({ top: l[i], bottom: h[i+2], idx: i+1 });
-    }
-  }
-  const price = c[n-1];
-  const d = b => price > b.top ? price - b.top : price < b.bottom ? b.bottom - price : 0;
-  bull.sort((x, y) => d(x) - d(y)); bear.sort((x, y) => d(x) - d(y));
-  return { bull: bull.slice(0, 3), bear: bear.slice(0, 3) };
-}
-function eqLevels(pts, A) {
-  const arr = pts.slice(-12), out = [];
-  for (let a = 0; a < arr.length; a++)
-    for (let b = a + 1; b < arr.length; b++)
-      if (Math.abs(arr[a].p - arr[b].p) <= 0.15 * A) out.push((arr[a].p + arr[b].p) / 2);
-  return out.slice(-3);
-}
-function premiumDiscount(h, l, price, look = 150) {
-  let hi = -Infinity, lo = Infinity;
-  for (let i = Math.max(0, h.length - look); i < h.length; i++) { hi = Math.max(hi, h[i]); lo = Math.min(lo, l[i]); }
-  const pos = hi > lo ? (price - lo) / (hi - lo) * 100 : 50;
-  return { hi, lo, pos, zone: pos > 55 ? "Premium" : pos < 45 ? "Discount" : "Equilibrium" };
-}
 
-/* ---------- Strategy checklist (SMC pullback) ---------- */
-const distZ = (b, price) => price > b.top ? price - b.top : price < b.bottom ? b.bottom - price : 0;
-function buildStrat(dir, o) {
-  const L = dir === "LONG";
-  const poi = L ? (o.ob.bulls[0] || o.fvg.bull[0]) : (o.ob.bears[0] || o.fvg.bear[0]);
-  const items = [
-    { ok: o.e200 != null ? (L ? o.price > o.e200 : o.price < o.e200) : (L ? o.e21 > o.e50 : o.e21 < o.e50),
-      txt: `HTF bias ${L ? "bullish" : "bearish"} (price ${L ? "above" : "below"} EMA200)` },
-    { ok: o.struct.trend === (L ? 1 : -1), txt: `Market structure ${L ? "bullish" : "bearish"} (BOS/CHoCH ${L ? "up" : "down"})` },
-    { ok: L ? o.pd.pos <= 55 : o.pd.pos >= 45, txt: `Location: ${L ? "discount" : "premium"} zone (ab ${o.pd.zone} ${o.pd.pos.toFixed(0)}%)` },
-    { ok: !!poi && distZ(poi, o.price) <= 1.5 * o.A, txt: `POI (OB/FVG) 1.5×ATR ke andar (entry zone)` },
-    { ok: L ? (o.rsi >= 45 && o.rsi <= 65) : (o.rsi >= 35 && o.rsi <= 55), txt: `RSI sweet spot (${L ? "45-65" : "35-55"}), ab ${o.rsi.toFixed(0)}` },
-    { ok: L ? o.buyRatio >= 0.5 : o.buyRatio <= 0.5, txt: `Order flow: taker ${L ? "buyers" : "sellers"} dominant (buy ${(o.buyRatio*100).toFixed(0)}%)` }
-  ];
-  const ready = items.filter(x => x.ok).length;
-  const entry = poi ? (poi.top + poi.bottom) / 2 : o.price;
-  const sl = L ? (poi ? poi.bottom - 0.5 * o.A : o.price - 1.5 * o.A) : (poi ? poi.top + 0.5 * o.A : o.price + 1.5 * o.A);
-  const risk = Math.abs(entry - sl);
-  const liq = L ? (o.struct.lastH && o.struct.lastH.p > entry ? o.struct.lastH.p : null)
-                : (o.struct.lastL && o.struct.lastL.p < entry ? o.struct.lastL.p : null);
-  const tp = liq || (L ? entry + 2 * risk : entry - 2 * risk);
-  return { dir, items, ready, entry, sl, tp, rr: risk > 0 ? Math.abs(tp - entry) / risk : 0, poiType: poi ? (o.ob.bulls[0] === poi || o.ob.bears[0] === poi ? "Order Block" : "FVG") : null };
-}
-
-/* ---------- Main analysis ---------- */
-function analyze(k, opts) {
-  opts = opts || { strict: $("strict").checked, obOnly: $("obOnly").checked };
+/* High-Accuracy Signal Analysis */
+function analyze(k, opts = { strict: $("strict").checked, obOnly: $("obOnly").checked }) {
   const n = k.length;
-  if (n < 80) return null;
+  if (n < 60) return null;
   const T = k.map(x => +x[0]), O = k.map(x => +x[1]), H = k.map(x => +x[2]),
-        L = k.map(x => +x[3]), C = k.map(x => +x[4]), V = k.map(x => +x[5]),
-        TB = k.map(x => +x[9]);
-  const e9 = ema(C, 9), e21 = ema(C, 21), e50 = ema(C, 50), e200 = ema(C, 200), r = rsi(C), a = atr(H, L, C);
+        L = k.map(x => +x[3]), C = k.map(x => +x[4]), V = k.map(x => +x[5]);
+  const e9 = ema(C, 9), e21 = ema(C, 21), e50 = ema(C, 50), e200 = ema(C, 200);
+  const r = rsi(C), a = atr(H, L, C);
   const i = n - 1, price = C[i], A = a[i];
-  if (e50[i] == null || r[i] == null || A == null) return null;
 
-  const look = opts.strict ? 3 : 5;
-  let crossUp = false, crossDn = false;
-  for (let j = i - look + 1; j <= i; j++) {
-    if (e9[j-1] <= e21[j-1] && e9[j] > e21[j]) crossUp = true;
-    if (e9[j-1] >= e21[j-1] && e9[j] < e21[j]) crossDn = true;
-  }
+  if (!A || r[i] == null || e50[i] == null) return null;
+
   let vAvg = 0; for (let j = i - 20; j < i; j++) vAvg += V[j]; vAvg /= 20;
   const vr = vAvg > 0 ? V[i] / vAvg : 1;
-
   const ob = findOrderBlocks(T, O, H, L, C, a);
-  const bullNear = ob.bulls.some(b => price >= b.bottom && price <= b.top + 1.5 * A);
-  const bearNear = ob.bears.some(b => price <= b.top && price >= b.bottom - 1.5 * A);
 
-  /* SMC extras */
-  const struct = marketStructure(T, H, L, C);
-  const fvg = findFVG(T, H, L, C, a);
-  const pd = premiumDiscount(H, L, price);
-  const eqH = eqLevels(struct.sw.hi, A), eqL = eqLevels(struct.sw.lo, A);
-  let sweep = null;
-  for (let j = n - 1; j >= n - 3; j--) {
-    if (struct.lastH && H[j] > struct.lastH.p && C[j] < struct.lastH.p) sweep = { type: "bear", level: struct.lastH.p };
-    if (struct.lastL && L[j] < struct.lastL.p && C[j] > struct.lastL.p) sweep = { type: "bull", level: struct.lastL.p };
+  const bullNearOB = ob.bulls.some(b => price >= b.bottom * 0.998 && price <= b.top + 1.2 * A);
+  const bearNearOB = ob.bears.some(b => price <= b.top * 1.002 && price >= b.bottom - 1.2 * A);
+
+  const trendUp = e9[i] > e21[i] && e21[i] > e50[i] && (e200[i] == null || price > e200[i]);
+  const trendDn = e9[i] < e21[i] && e21[i] < e50[i] && (e200[i] == null || price < e200[i]);
+
+  let score = 0, side = "WAIT", why = [];
+
+  if (trendUp && r[i] >= (opts.strict ? 48 : 42) && r[i] <= 70) {
+    score += 3;
+    why.push("Bullish trend alignment (EMA 9 > 21 > 50)");
+    if (vr >= 1.2) { score += 2; why.push(`Volume expansion confirmed (${vr.toFixed(2)}x)`); }
+    if (bullNearOB) { score += 3; why.push("Inside/Retesting Bullish Institutional Order Block"); }
+    if (r[i] >= 50 && r[i] <= 62) { score += 1; why.push("RSI in optimum momentum buy-zone"); }
+    if (score >= (opts.strict ? 7 : 5)) side = "LONG";
+  } else if (trendDn && r[i] <= (opts.strict ? 52 : 58) && r[i] >= 30) {
+    score += 3;
+    why.push("Bearish trend alignment (EMA 9 < 21 < 50)");
+    if (vr >= 1.2) { score += 2; why.push(`Bearish volume pressure (${vr.toFixed(2)}x)`); }
+    if (bearNearOB) { score += 3; why.push("Inside/Retesting Bearish Institutional Order Block"); }
+    if (r[i] <= 50 && r[i] >= 38) { score += 1; why.push("RSI in optimum sell momentum"); }
+    if (score >= (opts.strict ? 7 : 5)) side = "SHORT";
   }
-  let tb = 0, tv = 0;
-  for (let j = Math.max(0, n - 50); j < n; j++) { tb += TB[j]; tv += V[j]; }
-  const buyRatio = tv > 0 ? tb / tv : 0.5;
 
-  const longBase  = opts.strict ? (crossUp && e9[i] > e21[i] && price > e50[i] && r[i] >= 50 && r[i] <= 70)
-                                : (e9[i] > e21[i] && price > e50[i] && r[i] >= 45 && r[i] <= 75);
-  const shortBase = opts.strict ? (crossDn && e9[i] < e21[i] && price < e50[i] && r[i] >= 30 && r[i] <= 50)
-                                : (e9[i] < e21[i] && price < e50[i] && r[i] >= 25 && r[i] <= 55);
-  let side = longBase ? "LONG" : shortBase ? "SHORT" : "WAIT";
-  const dir = side;
-
-  const why = [
-    `EMA9 ${e9[i] > e21[i] ? "above" : "below"} EMA21, price ${price > e50[i] ? "above" : "below"} EMA50`,
-    `RSI = ${r[i].toFixed(1)}`,
-    crossUp ? `Bullish EMA cross last ${look} candles me` : crossDn ? `Bearish EMA cross last ${look} candles me` : `Last ${look} candles me fresh EMA cross nahi`,
-    `Volume = ${vr.toFixed(2)}x (20-candle avg)`
-  ];
-
-  let score = 0, conf = false;
-  if (dir !== "WAIT") {
-    const isL = dir === "LONG";
-    conf = isL ? bullNear : bearNear;
-    score += 2;
-    if (isL ? e21[i] > e50[i] : e21[i] < e50[i]) score += 1;
-    if (isL ? crossUp : crossDn) score += 1;
-    if (conf) score += 2;
-    if (vr >= 1.2) score += 1;
-    if (isL ? (r[i] >= 50 && r[i] <= 65) : (r[i] >= 35 && r[i] <= 50)) score += 1;
-    const aligned = struct.trend === (isL ? 1 : -1);
-    const lastEv = struct.evs[struct.evs.length - 1];
-    const chochAgainst = lastEv && lastEv.type === "CHoCH" && lastEv.dir === (isL ? -1 : 1) && (i - lastEv.i) <= 8;
-    if (aligned) { score += 1; why.push(`Market structure aligned (${struct.trend === 1 ? "bullish" : "bearish"}) (+1)`); }
-    if (chochAgainst) { score -= 1; why.push(`⚠️ Recent CHoCH direction ke against hai — caution (-1)`); }
-    if (Math.abs(price - e21[i]) > 3 * A) { score -= 1; why.push("Price EMA21 se bahut door hai (extended), chase mat karo (-1)"); }
-    why.push(conf ? "Order Block confluence: HAAN (+2)" : "Order Block confluence: NAHI");
-  }
-  let filtered = false;
-  if (opts.obOnly && side !== "WAIT" && !conf) { side = "WAIT"; filtered = true; why.push("OB confluence na hone se filter ho gaya"); }
-
-  const grade = score >= 7 ? "STRONG" : score >= 5 ? "MEDIUM" : "WEAK";
-  let sl = null, tp = null;
-  if (side === "LONG")  { sl = price - 1.5 * A; tp = price + 3 * A; }
-  if (side === "SHORT") { sl = price + 1.5 * A; tp = price - 3 * A; }
-  ob.price = price; ob.atr = A;
-
-  const stratDir = side !== "WAIT" ? side : struct.trend === 1 ? "LONG" : struct.trend === -1 ? "SHORT" : null;
-  const strat = stratDir ? buildStrat(stratDir, { price, A, e200: e200[i], e21: e21[i], e50: e50[i], rsi: r[i], struct, ob, fvg, pd, buyRatio }) : null;
-
-  return { side, score: side === "WAIT" ? 0 : score, grade, price, sl, tp, A, rsi: r[i],
-           e9: e9[i], e21: e21[i], e50: e50[i], e200: e200[i],
-           why, ob, conf, filtered, struct, fvg, pd, eqH, eqL, sweep, buyRatio, strat,
-           tf: curTf(), time: k[i][6] };
-}
-
-/* ---------- Backtest (relaxed rules, same SL/TP) ---------- */
-function backtest(k) {
-  const n = k.length;
-  if (n < 140) return null;
-  const H = k.map(x => +x[2]), L = k.map(x => +x[3]), C = k.map(x => +x[4]);
-  const e9 = ema(C, 9), e21 = ema(C, 21), e50 = ema(C, 50), r = rsi(C), a = atr(H, L, C);
-  let wins = 0, losses = 0, grossW = 0, grossL = 0, eq = 0, maxEq = 0, maxDD = 0, i = 60;
-  while (i < n - 2) {
-    if (e50[i] == null || r[i] == null || a[i] == null) { i++; continue; }
-    let d = 0;
-    if (e9[i] > e21[i] && C[i] > e50[i] && r[i] >= 45 && r[i] <= 75) d = 1;
-    else if (e9[i] < e21[i] && C[i] < e50[i] && r[i] >= 25 && r[i] <= 55) d = -1;
-    if (!d) { i++; continue; }
-    const entry = C[i], A = a[i];
-    const sl = d === 1 ? entry - 1.5 * A : entry + 1.5 * A;
-    const tp = d === 1 ? entry + 3 * A : entry - 3 * A;
-    let j = i + 1, out = 0;
-    for (; j < Math.min(n, i + 60); j++) {
-      if (d === 1) { if (L[j] <= sl) { out = -1; break; } if (H[j] >= tp) { out = 2; break; } }
-      else         { if (H[j] >= sl) { out = -1; break; } if (L[j] <= tp) { out = 2; break; } }
+  if (opts.obOnly && side !== "WAIT") {
+    if ((side === "LONG" && !bullNearOB) || (side === "SHORT" && !bearNearOB)) {
+      side = "WAIT";
+      why.push("Strict Filter: Dismissed (No direct Order Block confluence)");
     }
-    if (out === 0) out = ((C[Math.min(n - 1, i + 60)] - entry) * d) / (1.5 * A);
-    eq += out; maxEq = Math.max(maxEq, eq); maxDD = Math.max(maxDD, maxEq - eq);
-    if (out > 0) { wins++; grossW += out; } else { losses++; grossL -= out; }
-    i = j + 1;
   }
-  const trades = wins + losses;
-  if (!trades) return null;
-  return { trades, win: wins / trades * 100, pf: grossL > 0 ? grossW / grossL : 99,
-           avgR: (grossW - grossL) / trades, maxDD };
+
+  const sl = side === "LONG" ? price - 1.6 * A : side === "SHORT" ? price + 1.6 * A : null;
+  const tp = side === "LONG" ? price + 3.2 * A : side === "SHORT" ? price - 3.2 * A : null;
+
+  return { side, score, price, sl, tp, A, rsi: r[i], e9: e9[i], e21: e21[i], e50: e50[i], why, ob, vr, tf: curTf() };
 }
 
-/* ---------- Data ---------- */
-async function fetchK(symbol, tf) {
-  const res = await fetch(`${REST}/fapi/v1/klines?symbol=${symbol}&interval=${tf}&limit=300`);
-  if (res.status === 429 || res.status === 418) throw new Error("RATE");
-  if (!res.ok) throw new Error("Binance HTTP " + res.status + ". Aapke region me blocked ho sakta hai.");
-  let k = await res.json();
-  if (k.length && k[k.length - 1][6] > Date.now()) k = k.slice(0, -1);
-  return k;
+/* Fetch & Stream Candlesticks */
+async function fetchKlines(sym, tf) {
+  const res = await fetch(`${REST}/fapi/v1/klines?symbol=${sym}&interval=${tf}&limit=160`);
+  if (!res.ok) throw new Error("Binance API Blocked or Rate Limited");
+  return await res.json();
 }
 
-/* ---------- Single coin signal ---------- */
-async function getSignal() {
-  const my = ++reqId;
-  const btn = $("go"), box = $("result");
-  btn.disabled = true; btn.textContent = "Loading...";
-  try {
-    const symbol = sel, tf = curTf();
-    const k = await fetchK(symbol, tf);
-    if (my !== reqId) return;
-    kCache[key(symbol, tf)] = k;
-    const R = analyze(k);
-    if (!R) throw new Error("Is coin ka data kam hai (naya listing ho sakta hai).");
-    results[symbol] = R;
-    obs = R.ob; lastSig = R.side === "WAIT" ? null : { price: R.price, sl: R.sl };
-    const bt = backtest(k);
-
-    box.innerHTML = `
-      <div class="card">
-        <div class="sub">${symbol} · ${tf} · closed candle ${new Date(R.time).toLocaleString()}</div>
-        <div class="badge ${R.side}">${R.side}${R.side !== "WAIT" ? `<small>${R.grade} · score ${R.score}/9</small>` : ""}</div>
-        <div class="grid">
-          <div class="item"><span>Entry (last close)</span><b>${fmt(R.price)}</b></div>
-          <div class="item"><span>RSI 14</span><b>${R.rsi.toFixed(1)}</b></div>
-          <div class="item"><span>Stop-loss (1.5×ATR)</span><b>${R.sl ? fmt(R.sl) : "-"}</b></div>
-          <div class="item"><span>Target (2:1 R/R)</span><b>${R.tp ? fmt(R.tp) : "-"}</b></div>
-          <div class="item"><span>ATR 14</span><b>${fmt(R.A)}</b></div>
-          <div class="item"><span>EMA 9 / 21 / 50 / 200</span><b style="font-size:12px">${fmt(R.e9)} / ${fmt(R.e21)} / ${fmt(R.e50)} / ${R.e200 ? fmt(R.e200) : "-"}</b></div>
-        </div>
-        <ul>${R.why.map(x => `<li>${x}</li>`).join("")}</ul>
-        ${R.side === "WAIT" ? '<div class="sub" style="margin-top:10px">Abhi trend clear nahi. Neeche scanner se signal wale coins dekho, ya timeframe badlo.</div>' : ""}
-        ${R.strat ? renderStrat(R.strat) : ""}
-        ${bt ? `<div class="sub" style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px">
-          <b>Backtest</b> (last ${k.length} candles, same rules, fees/funding excluded):
-          ${bt.trades} trades · Win rate <b>${bt.win.toFixed(0)}%</b> · Profit factor <b>${bt.pf === 99 ? "∞" : bt.pf.toFixed(2)}</b>
-          · Avg <b>${bt.avgR >= 0 ? "+" : ""}${bt.avgR.toFixed(2)}R</b>/trade · Max DD <b>${bt.maxDD.toFixed(1)}R</b></div>` : ""}
-      </div>`;
-    $("cvSym").textContent = symbol;
-    renderSMC(R); renderOB(); updateSize(); renderMarket(); drawChart();
-  } catch (e) {
-    if (my === reqId) box.innerHTML = `<div class="card err">Error: ${e.message === "RATE" ? "Binance rate limit, thodi der baad try karo." : e.message}</div>`;
-  } finally {
-    if (my === reqId) { btn.disabled = false; btn.textContent = "Get signal"; }
-  }
-}
-
-function renderStrat(s) {
-  return `
-    <div style="margin-top:12px;border-top:1px solid var(--line);padding-top:10px">
-      <h2>Best strategy: SMC pullback — checklist (${s.dir})</h2>
-      <div class="sub" style="margin-bottom:6px">Rules: HTF bias → structure shift (BOS/CHoCH) → POI (OB/FVG) pe limit entry → SL POI ke peeche → TP liquidity / min 2R. Market order chase mat karo.</div>
-      ${s.items.map(x => `<div class="chk-item ${x.ok ? "ok" : ""}">${x.ok ? "✅" : "⚪"} <span>${x.txt}</span></div>`).join("")}
-      <div class="sub" style="margin-top:8px">
-        ${s.ready >= 5 ? `<b style="color:var(--green)">Setup READY (${s.ready}/6)</b> — limit order plan:` :
-          s.ready === 4 ? `<b style="color:var(--yellow)">Setup almost (${s.ready}/6)</b> — ek-do conditions ka wait karo:` :
-          `<b style="color:var(--mute)">Setup weak (${s.ready}/6)</b> — abhi trade mat karo, ye levels note karo:`}
-      </div>
-      <div class="grid" style="margin-top:8px">
-        <div class="item"><span>Limit entry (${s.poiType || "market"})</span><b>${fmt(s.entry)}</b></div>
-        <div class="item"><span>Stop-loss</span><b class="down">${fmt(s.sl)}</b></div>
-        <div class="item"><span>Take-profit</span><b class="up">${fmt(s.tp)}</b></div>
-        <div class="item"><span>Reward : Risk</span><b>${s.rr.toFixed(1)} : 1</b></div>
-      </div>
-    </div>`;
-}
-
-/* ---------- Scanner ---------- */
-function reanalyzeAll() {
-  const tf = curTf();
-  Object.keys(kCache).forEach(kk => {
-    if (!kk.endsWith("_" + tf)) return;
-    const s = kk.split("_")[0];
-    const R = analyze(kCache[kk]);
-    if (R) results[s] = R;
-  });
-  renderMarket(); drawChart();
-}
-
-async function runScan() {
-  if (!coins.length) return;
-  const my = ++scanId, tf = curTf();
-  const opts = { strict: $("strict").checked, obOnly: $("obOnly").checked };
-  const queue = coins.map(c => c.symbol);
-  const total = queue.length; let done = 0, rateHit = false;
-  $("scanBtn").disabled = true;
-  const worker = async () => {
-    while (queue.length && my === scanId && !rateHit) {
-      const s = queue.shift();
-      try {
-        const k = await fetchK(s, tf);
-        if (my !== scanId) return;
-        kCache[key(s, tf)] = k;
-        const R = analyze(k, opts); if (R) results[s] = R;
-      } catch (e) { if (e.message === "RATE") rateHit = true; }
-      done++;
-      if (my === scanId) $("scanInfo").textContent = `Scanning ${done}/${total} (${tf})...`;
-      await sleep(60);
+function listenCandleStream(sym, tf) {
+  if (wsCandle) { try { wsCandle.close(); } catch(e){} }
+  const streamUrl = `${WSB}${sym.toLowerCase()}@kline_${tf}`;
+  wsCandle = new WebSocket(streamUrl);
+  wsCandle.onopen = () => $("dCandle").classList.add("on");
+  wsCandle.onmessage = e => {
+    const msg = JSON.parse(e.data);
+    if (!msg.k) return;
+    const k = msg.k;
+    const candleObj = [+k.t, +k.o, +k.h, +k.l, +k.c, +k.v, +k.T];
+    const cacheKey = key(sym, tf);
+    if (kCache[cacheKey]) {
+      const arr = kCache[cacheKey];
+      if (arr[arr.length - 1][0] === candleObj[0]) {
+        arr[arr.length - 1] = candleObj; // Live Update current candle
+      } else {
+        arr.push(candleObj);
+        arr.shift();
+      }
+      drawChart();
     }
   };
-  await Promise.all(Array.from({ length: 5 }, worker));
-  if (my !== scanId) return;
-  $("scanBtn").disabled = false;
-  const n = Object.values(results).filter(x => x.tf === tf && x.side !== "WAIT").length;
-  $("scanInfo").textContent = rateHit
-    ? "Rate limit lag gaya, scan beech me ruka. 1 minute baad dobara scan karo."
-    : `Scan complete (${tf}): ${n} coins me signal mila. Row pe click karke detail + chart kholo.`;
-  renderMarket();
+  wsCandle.onclose = () => { $("dCandle").classList.remove("on"); };
 }
 
-function updateSize() {
-  const out = $("sizeOut");
-  if (!lastSig) { out.textContent = "Koi active LONG/SHORT signal nahi, to size nahi nikal sakte."; return; }
-  const eq = +$("equity").value, rp = +$("riskPct").value;
-  if (!(eq > 0 && rp > 0)) { out.textContent = "Equity aur risk % daalo."; return; }
-  const riskAmt = eq * rp / 100, dist = Math.abs(lastSig.price - lastSig.sl), qty = riskAmt / dist;
-  out.innerHTML = `Risk: <b>${riskAmt.toFixed(2)} USDT</b> · Size: <b>${qty.toFixed(4)}</b> units (notional ≈ ${(qty * lastSig.price).toFixed(2)} USDT). 0.5-1% risk rakho.`;
-}
-
-/* ---------- Renders ---------- */
-function renderLive() {
-  const x = prices[sel];
-  if (!x || !x.p) return;
-  const ch = (x.p - x.o) / x.o * 100;
-  $("live").innerHTML = `
-    <div class="sub">${sel} · Live</div>
-    <div class="price ${liveDir}">${fmt(x.p)}</div>
-    <div class="${ch >= 0 ? "up" : "down"}" style="font-weight:700">${ch >= 0 ? "+" : ""}${ch.toFixed(2)}% (24h)</div>
-    <div class="sub" style="margin-top:6px">24h High ${fmt(x.h)} · Low ${fmt(x.l)} · Vol ${money(x.q)} USDT</div>`;
-}
-
-function renderSMC(R) {
-  const st = R.struct, lastEv = st.evs[st.evs.length - 1];
-  const evHtml = st.evs.slice(-5).reverse().map(e =>
-    `<span class="ev ${e.type === "CHoCH" ? "c" : e.dir === 1 ? "u" : "d"}">${e.type}${e.dir === 1 ? "↑" : "↓"} ${fmt(e.p)}</span>`).join("");
-  const fvgRow = (f, col) => `<div class="ob ${col}"><div><b>${f.top > 0 ? fmt(f.bottom) + " - " + fmt(f.top) : "-"}</b><small>${new Date().toLocaleDateString()}</small></div>
-    <div style="text-align:right"><small>gap ${(f.top - f.bottom > 0 ? ((f.top - f.bottom) / R.price * 100).toFixed(2) : 0)}%</small></div></div>`;
-  $("smcBox").innerHTML = `
-    <div class="grid" style="margin-bottom:10px">
-      <div class="item"><span>Market structure</span><b class="${st.trend === 1 ? "up" : st.trend === -1 ? "down" : ""}">${st.trend === 1 ? "Bullish 🐂" : st.trend === -1 ? "Bearish 🐻" : "Ranging"}</b></div>
-      <div class="item"><span>Last event (trend change of character)</span><b style="font-size:13px">${lastEv ? `${lastEv.type}${lastEv.dir === 1 ? "↑" : "↓"} @ ${fmt(lastEv.p)}` : "-"}</b></div>
-      <div class="item"><span>Premium / Discount</span><b>${R.pd.zone} (${R.pd.pos.toFixed(0)}%)</b>
-        <div class="bar"><i style="width:${R.pd.pos}%;background:${R.pd.pos > 55 ? "var(--red)" : R.pd.pos < 45 ? "var(--green)" : "var(--yellow)"}"></i></div></div>
-      <div class="item"><span>Taker flow (50 candles)</span><b>Buy ${(R.buyRatio * 100).toFixed(0)}% / Sell ${(100 - R.buyRatio * 100).toFixed(0)}%</b>
-        <div class="flow"><i style="width:${R.buyRatio * 100}%;background:var(--green)"></i><i style="width:${(1 - R.buyRatio) * 100}%;background:var(--red)"></i></div></div>
-    </div>
-    <div style="margin-bottom:8px">${evHtml || '<span class="sub">Koi recent BOS/CHoCH nahi</span>'}</div>
-    ${R.sweep ? `<div class="item" style="border-color:var(--yellow);margin-bottom:8px"><span>🚨 Liquidity sweep detected</span><b>${R.sweep.type === "bull" ? "Sell-side liquidity swept (wick below, close back above) — bullish clue" : "Buy-side liquidity swept (wick above, close back below) — bearish clue"} @ ${fmt(R.sweep.level)}</b></div>` : ""}
-    <div class="sub" style="margin-bottom:4px">Liquidity pools: ${st.lastH ? `above <b>${fmt(st.lastH.p)}</b>` : "above -"} ${R.eqH.length ? `(equal highs ~ <b>${fmt(R.eqH[R.eqH.length-1])}</b>)` : ""} · ${st.lastL ? `below <b>${fmt(st.lastL.p)}</b>` : "below -"} ${R.eqL.length ? `(equal lows ~ <b>${fmt(R.eqL[R.eqL.length-1])}</b>)` : ""}</div>
-    <div class="sub" style="margin:8px 0 4px"><b>Fair Value Gaps (unfilled, nearest):</b></div>
-    ${R.fvg.bull.slice(0, 2).map(f => fvgRow(f, "bull")).join("") || ""}
-    ${R.fvg.bear.slice(0, 2).map(f => fvgRow(f, "bear")).join("") || ""}
-    ${!R.fvg.bull.length && !R.fvg.bear.length ? '<div class="sub">Koi unfilled FVG nahi.</div>' : ""}`;
-}
-
-function renderOB() {
-  const box = $("obBox");
-  if (!obs) return;
-  const px = (prices[sel] && prices[sel].p) || obs.price;
-  const row = b => {
-    const inside = px <= b.top && px >= b.bottom;
-    const d = px > b.top ? (px - b.top) / px * 100 : px < b.bottom ? (b.bottom - px) / px * 100 : 0;
-    return `<div class="ob ${b.type}">
-      <div><b>${fmt(b.bottom)} - ${fmt(b.top)}</b><small>${new Date(b.time).toLocaleString()}</small></div>
-      <div style="text-align:right"><span class="pill ${b.type === "bull" ? "LONG" : "SHORT"}">${b.type === "bull" ? "BULL OB" : "BEAR OB"}</span>
-      <small>${inside ? "✅ price ANDAR hai" : d.toFixed(2) + "% door"}</small></div></div>`;
-  };
-  box.innerHTML =
-    (obs.bulls.map(row).join("") || "") + (obs.bears.map(row).join("") || "") ||
-    '<div class="sub">Koi unmitigated order block nahi mila.</div>';
-}
-
-function renderMarket() {
-  const tb = $("mkt");
-  if (!coins.length) { tb.innerHTML = '<tr><td colspan="7" class="sub">Loading...</td></tr>'; return; }
-  const q = $("search").value.trim().toUpperCase(), mf = $("mfilter").value, tf = curTf();
-  let list = coins.map((c, idx) => ({ ...c, rank: idx + 1, pr: prices[c.symbol],
-    R: (results[c.symbol] && results[c.symbol].tf === tf) ? results[c.symbol] : null }));
-  if (q) list = list.filter(x => x.symbol.includes(q));
-  if (mf === "sig") list = list.filter(x => x.R && x.R.side !== "WAIT");
-  if (mf === "long") list = list.filter(x => x.R && x.R.side === "LONG");
-  if (mf === "short") list = list.filter(x => x.R && x.R.side === "SHORT");
-  if (mf !== "all") list.sort((a, b) => (b.R ? b.R.score : 0) - (a.R ? a.R.score : 0));
-  tb.innerHTML = list.map(x => {
-    const ch = x.pr ? (x.pr.p - x.pr.o) / x.pr.o * 100 : 0;
-    return `<tr class="clickable ${x.symbol === sel ? "sel" : ""}" data-s="${x.symbol}">
-      <td>${x.rank}</td><td>${x.symbol.replace("USDT", "")}</td>
-      <td>${x.pr ? fmt(x.pr.p) : "-"}</td>
-      <td class="${ch >= 0 ? "up" : "down"}">${x.pr ? (ch >= 0 ? "+" : "") + ch.toFixed(2) + "%" : "-"}</td>
-      <td>${x.R ? `<span class="pill ${x.R.side}">${x.R.side}</span>` : "—"}</td>
-      <td>${x.R && x.R.side !== "WAIT" ? x.R.score + "/9" : "—"}</td>
-      <td>${x.pr ? money(x.pr.q) : "-"}</td></tr>`;
-  }).join("") || '<tr><td colspan="7" class="sub">Kuch nahi mila — filter badlo ya "Scan 150 coins" dabao.</td></tr>';
-}
-
-function whaleThr() {
-  const q = (prices[sel] && prices[sel].q) || 0;
-  return Math.min(150000, Math.max(25000, q * 0.00005));
-}
-function renderWhales() {
-  const cut = Date.now() - 15 * 60 * 1000;
-  let b = 0, s = 0;
-  whales.forEach(w => { if (w.t > cut) { if (w.side === "BUY") b += w.usd; else s += w.usd; } });
-  const tot = b + s;
-  $("whaleSum").innerHTML = `Last 15 min big prints (&gt; $${money(whaleThr())}):
-    <b class="up">Buy $${money(b)}</b> vs <b class="down">Sell $${money(s)}</b>
-    ${tot ? `· Delta <b class="${b >= s ? "up" : "down"}">${b >= s ? "+" : "-"}$${money(Math.abs(b - s))}</b> ${b >= s ? "(whales buying)" : "(whales selling)"}` : ""}
-    <div class="flow"><i style="width:${tot ? b / tot * 100 : 50}%;background:var(--green)"></i><i style="width:${tot ? s / tot * 100 : 50}%;background:var(--red)"></i></div>`;
-  $("whaleFeed").innerHTML = whales.slice(0, 40).map(w =>
-    `<tr class="${w.usd >= 500000 ? "big" : ""}"><td>${tstr(w.t)}</td>
-     <td class="${w.side === "BUY" ? "up" : "down"}" style="font-weight:700">${w.side === "BUY" ? "🟢 BUY" : "🔴 SELL"}</td>
-     <td>${fmt(w.price)}</td><td>${w.usd >= 500000 ? "🐋🐋 " : w.usd >= 100000 ? "🐋 " : ""}$${money(w.usd)}</td></tr>`
-  ).join("") || '<tr><td colspan="4" class="sub">Whale ka wait hai...</td></tr>';
-}
-
-function addLiq(x) {
-  liqs.unshift(x);
-  if (liqs.length > 120) liqs.pop();
-  renderLiq();
-}
-function renderLiq() {
-  const cut = Date.now() - 3600000, only = $("liqSel").checked;
-  const base = sel.replace("USDT", "");
-  let lu = 0, su = 0; const cnt = { BINANCE: 0, BYBIT: 0, OKX: 0 };
-  liqs.forEach(x => { if (x.t > cut) { if (x.side === "LONG") lu += x.usd; else su += x.usd; cnt[x.ex] = (cnt[x.ex] || 0) + 1; } });
-  $("liqTot").innerHTML = `
-    <div class="item"><span>Longs rekt (1h)</span><b class="down">$${money(lu)}</b></div>
-    <div class="item"><span>Shorts rekt (1h)</span><b class="up">$${money(su)}</b></div>`;
-  $("liqEx").textContent = `1h count — Binance: ${cnt.BINANCE || 0} · Bybit: ${cnt.BYBIT || 0} · OKX: ${cnt.OKX || 0}`;
-  const list = (only ? liqs.filter(x => x.coin === base) : liqs).slice(0, 60);
-  $("liqFeed").innerHTML = list.map(x =>
-    `<tr class="${x.usd >= 250000 ? "big" : ""}"><td>${tstr(x.t)}</td><td class="ex">${x.ex}</td><td>${x.coin}</td>
-     <td><span class="pill ${x.side === "LONG" ? "SHORT" : "LONG"}">${x.side === "LONG" ? "LONG REKT" : "SHORT REKT"}</span></td>
-     <td>${fmt(x.price)}</td><td>$${money(x.usd)}</td></tr>`
-  ).join("") || '<tr><td colspan="6" class="sub">Liquidation ka wait hai...</td></tr>';
-}
-
-/* ---------- Chart ---------- */
+/* Draw Canvas Chart With Live Candle & Volume */
 function drawChart() {
   const cv = $("cv");
   const W = cv.clientWidth, H = cv.clientHeight;
@@ -810,250 +308,208 @@ function drawChart() {
   const ctx = cv.getContext("2d");
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, W, H);
+
   const k = kCache[key(sel, curTf())];
-  if (!k) { ctx.fillStyle = "#8b94a5"; ctx.font = "13px system-ui"; ctx.fillText("Signal lo — chart yahan banega.", 14, 24); return; }
-  const R = (results[sel] && results[sel].tf === curTf()) ? results[sel] : null;
-  const N = Math.min(120, k.length), start = k.length - N, data = k.slice(start);
-  const e9 = ema(k.map(x => +x[4]), 9).slice(start), e21 = ema(k.map(x => +x[4]), 21).slice(start), e50 = ema(k.map(x => +x[4]), 50).slice(start);
-  const axW = 64, plotW = W - axW, volH = 56, priceH = H - volH - 20;
-  let mn = Infinity, mx = -Infinity;
-  data.forEach(x => { mn = Math.min(mn, +x[3]); mx = Math.max(mx, +x[2]); });
-  if (R) {
-    [...R.ob.bulls, ...R.ob.bears].forEach(b => { mn = Math.min(mn, b.bottom); mx = Math.max(mx, b.top); });
-    if (R.sl) { mn = Math.min(mn, R.sl); mx = Math.max(mx, R.tp); }
-  }
-  const pad = (mx - mn) * 0.06 || 1; mn -= pad; mx += pad;
-  const y = p => 8 + (mx - p) / (mx - mn) * (priceH - 16);
+  if (!k || !k.length) return;
+
+  const N = Math.min(100, k.length), data = k.slice(k.length - N);
+  const C = data.map(x => +x[4]), e9 = ema(C, 9), e21 = ema(C, 21), e50 = ema(C, 50);
+
+  const axW = 65, plotW = W - axW, volH = 75, priceH = H - volH - 24;
+  let mn = Infinity, mx = -Infinity, maxVol = 0;
+  data.forEach(x => {
+    mn = Math.min(mn, +x[3]);
+    mx = Math.max(mx, +x[2]);
+    maxVol = Math.max(maxVol, +x[5]);
+  });
+  const pad = (mx - mn) * 0.05 || 1; mn -= pad; mx += pad;
+
+  const y = p => 10 + (mx - p) / (mx - mn) * (priceH - 20);
   const bw = plotW / N, x = i => i * bw + bw / 2;
 
-  ctx.strokeStyle = "#1c2330"; ctx.fillStyle = "#8b94a5"; ctx.font = "10px system-ui"; ctx.textAlign = "left";
-  const step = (mx - mn) / 5;
-  for (let g = 0; g <= 5; g++) {
-    const p = mx - step * g, yy = y(p);
-    ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(plotW, yy); ctx.stroke();
-    ctx.fillText(fmt(p), plotW + 5, yy + 3);
+  // Grid
+  ctx.strokeStyle = "#171d27"; ctx.fillStyle = "#8b94a5"; ctx.font = "10px sans-serif";
+  for (let g = 0; g <= 4; g++) {
+    const p = mx - (mx - mn) / 4 * g;
+    ctx.beginPath(); ctx.moveTo(0, y(p)); ctx.lineTo(plotW, y(p)); ctx.stroke();
+    ctx.fillText(fmt(p), plotW + 5, y(p) + 3);
   }
-  let vm = 0; data.forEach(x2 => vm = Math.max(vm, +x2[5]));
-  data.forEach((x2, i) => {
-    const up = +x2[4] >= +x2[1];
-    ctx.fillStyle = up ? "rgba(22,199,132,.35)" : "rgba(234,57,67,.35)";
-    const vh = vm ? +x2[5] / vm * (volH - 6) : 0;
-    ctx.fillRect(i * bw + bw * 0.15, H - 20 - vh, bw * 0.7, vh);
+
+  // Volume Bars
+  data.forEach((d, i) => {
+    const isUp = +d[4] >= +d[1];
+    const vHeight = maxVol > 0 ? (+d[5] / maxVol) * (volH - 12) : 0;
+    ctx.fillStyle = isUp ? "rgba(22,199,132,0.3)" : "rgba(234,57,67,0.3)";
+    ctx.fillRect(i * bw + 1, H - 20 - vHeight, bw - 2, vHeight);
   });
-  if (R) {
-    const zone = (b, col) => {
-      const xx = Math.max(0, (b.idx - start)) * bw;
-      ctx.fillStyle = col;
-      ctx.fillRect(xx, y(b.top), plotW - xx, y(b.bottom) - y(b.top));
-    };
-    R.ob.bulls.forEach(b => zone(b, "rgba(22,199,132,.13)"));
-    R.ob.bears.forEach(b => zone(b, "rgba(234,57,67,.13)"));
-    R.fvg.bull.forEach(f => { if (f.idx >= start) zone(f, "rgba(76,141,255,.12)"); });
-    R.fvg.bear.forEach(f => { if (f.idx >= start) zone(f, "rgba(240,185,11,.10)"); });
-  }
-  data.forEach((x2, i) => {
-    const o = +x2[1], h = +x2[2], l = +x2[3], c = +x2[4], up = c >= o;
-    ctx.strokeStyle = up ? "#16c784" : "#ea3943";
-    ctx.fillStyle = up ? "#16c784" : "#ea3943";
-    ctx.beginPath(); ctx.moveTo(x(i), y(h)); ctx.lineTo(x(i), y(l)); ctx.stroke();
-    const w = Math.max(1, bw * 0.7);
-    ctx.fillRect(x(i) - w / 2, y(Math.max(o, c)), w, Math.max(1, y(Math.min(o, c)) - y(Math.max(o, c))));
+
+  // Candles (Wicks + Bodies)
+  data.forEach((d, i) => {
+    const o = +d[1], h = +d[2], l = +d[3], c = +d[4], isUp = c >= o;
+    const col = isUp ? "#16c784" : "#ea3943";
+    ctx.strokeStyle = col; ctx.fillStyle = col;
+    
+    // Wick
+    ctx.beginPath();
+    ctx.moveTo(x(i), y(h));
+    ctx.lineTo(x(i), y(l));
+    ctx.stroke();
+
+    // Body
+    const topY = y(Math.max(o, c)), botY = y(Math.min(o, c));
+    ctx.fillRect(x(i) - (bw * 0.75)/2, topY, Math.max(1, bw * 0.75), Math.max(1.5, botY - topY));
   });
-  const line = (arr, col) => {
-    ctx.strokeStyle = col; ctx.lineWidth = 1.4; ctx.beginPath();
-    let st = false;
-    arr.forEach((v, i) => { if (v == null) return; const xx = x(i), yy = y(v); if (!st) { ctx.moveTo(xx, yy); st = true; } else ctx.lineTo(xx, yy); });
+
+  // EMAs
+  const renderLine = (arr, col) => {
+    ctx.strokeStyle = col; ctx.lineWidth = 1.3; ctx.beginPath();
+    let started = false;
+    arr.forEach((v, i) => {
+      if (v == null) return;
+      const xx = x(i), yy = y(v);
+      if (!started) { ctx.moveTo(xx, yy); started = true; } else ctx.lineTo(xx, yy);
+    });
     ctx.stroke(); ctx.lineWidth = 1;
   };
-  line(e9, "#f0b90b"); line(e21, "#4c8dff"); line(e50, "#a78bfa");
-  if (R) {
-    ctx.font = "9px system-ui"; ctx.textAlign = "center";
-    R.struct.evs.forEach(ev => {
-      if (ev.i < start || ev.i >= k.length) return;
-      const vi = ev.i - start; if (vi < 0 || vi >= N) return;
-      const yy = ev.dir === 1 ? y(+data[vi][3]) + 13 : y(+data[vi][2]) - 6;
-      ctx.fillStyle = ev.type === "CHoCH" ? "#f0b90b" : ev.dir === 1 ? "#16c784" : "#ea3943";
-      ctx.fillText(ev.type + (ev.dir === 1 ? "↑" : "↓"), x(vi), yy);
-    });
-    ctx.textAlign = "left";
-    if (R.sl) {
-      const hline = (p, col, txt) => {
-        ctx.strokeStyle = col; ctx.setLineDash([5, 4]);
-        ctx.beginPath(); ctx.moveTo(0, y(p)); ctx.lineTo(plotW, y(p)); ctx.stroke(); ctx.setLineDash([]);
-        ctx.fillStyle = col; ctx.fillText(txt, 4, y(p) - 3);
-      };
-      hline(R.sl, "#ea3943", "SL " + fmt(R.sl));
-      hline(R.tp, "#16c784", "TP " + fmt(R.tp));
-    }
+  renderLine(e9, "#f0b90b"); renderLine(e21, "#4c8dff"); renderLine(e50, "#a78bfa");
+
+  // Last Price Line
+  const lastC = +data[data.length - 1][4];
+  ctx.strokeStyle = "rgba(230,233,239,0.4)"; ctx.setLineDash([3, 3]);
+  ctx.beginPath(); ctx.moveTo(0, y(lastC)); ctx.lineTo(plotW, y(lastC)); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle = "#202a3b"; ctx.fillRect(plotW + 2, y(lastC) - 8, axW - 4, 16);
+  ctx.fillStyle = "#e6e9ef"; ctx.fillText(fmt(lastC), plotW + 5, y(lastC) + 3);
+
+  // Live Candle OHLC Header Update
+  const cur = data[data.length - 1];
+  $("ohlc").innerHTML = `O: <b>${fmt(+cur[1])}</b> H: <b>${fmt(+cur[2])}</b> L: <b>${fmt(+cur[3])}</b> C: <b>${fmt(+cur[4])}</b> Vol: <b>${money(+cur[5])}</b>`;
+}
+
+/* Master Signal Flow */
+async function getSignal() {
+  const my = ++reqId, btn = $("go");
+  btn.disabled = true; btn.textContent = "Calculating...";
+  try {
+    const s = sel, tf = curTf();
+    $("cvSym").textContent = s; $("cvTf").textContent = tf;
+    const k = await fetchKlines(s, tf);
+    if (my !== reqId) return;
+    kCache[key(s, tf)] = k;
+    listenCandleStream(s, tf);
+    drawChart();
+
+    const R = analyze(k);
+    results[s] = R;
+    obs = R.ob;
+
+    $("result").innerHTML = `
+      <div class="card">
+        <div class="badge ${R.side}">${R.side} <small>Confidence ${R.score}/10</small></div>
+        <div class="grid">
+          <div class="item"><span>Entry Target</span><b>${fmt(R.price)}</b></div>
+          <div class="item"><span>RSI (14)</span><b>${R.rsi.toFixed(1)}</b></div>
+          <div class="item"><span>Stop Loss (1.6x ATR)</span><b class="down">${R.sl ? fmt(R.sl) : "-"}</b></div>
+          <div class="item"><span>Take Profit (2:1 RR)</span><b class="up">${R.tp ? fmt(R.tp) : "-"}</b></div>
+        </div>
+        <ul>${R.why.map(w => `<li>${w}</li>`).join("")}</ul>
+      </div>`;
+
+    $("smcBox").innerHTML = `
+      <div class="item"><span>Volume vs Avg:</span><b>${R.vr.toFixed(2)}x</b></div>
+      <div class="sub" style="margin-top:6px">Algorithmic filter active: Chop detection and fake breakout filters applied.</div>`;
+
+    renderOB(); renderMarket();
+  } catch(e) {
+    $("result").innerHTML = `<div class="card" style="color:var(--red)">Failed: ${e.message}</div>`;
+  } finally {
+    if (my === reqId) { btn.disabled = false; btn.textContent = "Recalculate Signal"; }
   }
-  const lp = (prices[sel] && prices[sel].p) || +data[data.length - 1][4];
-  ctx.strokeStyle = "rgba(230,233,239,.45)"; ctx.setLineDash([2, 3]);
-  ctx.beginPath(); ctx.moveTo(0, y(lp)); ctx.lineTo(plotW, y(lp)); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = "#202a3b"; ctx.fillRect(plotW + 1, y(lp) - 8, axW - 2, 16);
-  ctx.fillStyle = "#e6e9ef"; ctx.fillText(fmt(lp), plotW + 5, y(lp) + 3);
-  ctx.fillStyle = "#8b94a5";
-  for (let i = 0; i < N; i += 24) {
-    const d = new Date(+data[i][0]);
-    ctx.fillText((d.getMonth() + 1) + "/" + d.getDate() + " " + String(d.getHours()).padStart(2, "0") + ":00", Math.max(2, x(i) - 14), H - 6);
-  }
-  if (chartMouse && chartMouse.x < plotW) {
-    const i = Math.floor(chartMouse.x / bw);
-    if (i >= 0 && i < N) {
-      const x2 = data[i];
-      ctx.strokeStyle = "rgba(139,148,165,.4)"; ctx.setLineDash([3, 3]);
-      ctx.beginPath(); ctx.moveTo(x(i), 0); ctx.lineTo(x(i), H - 20); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(0, chartMouse.y); ctx.lineTo(plotW, chartMouse.y); ctx.stroke(); ctx.setLineDash([]);
-      $("ohlc").textContent = `${new Date(+x2[0]).toLocaleString()} · O ${fmt(+x2[1])} · H ${fmt(+x2[2])} · L ${fmt(+x2[3])} · C ${fmt(+x2[4])} · Vol ${money(+x2[5])}`;
-    }
-  }
 }
 
-/* ---------- WebSockets ---------- */
-function connectAllPrices() {
-  const ws = new WebSocket(WSB + "!miniTicker@arr");
-  ws.onopen = () => $("dPrice").classList.add("on");
-  ws.onmessage = ev => {
-    const prev = prices[sel] && prices[sel].p;
-    JSON.parse(ev.data).forEach(t => {
-      if (t.s.endsWith("USDT")) prices[t.s] = { p: +t.c, o: +t.o, h: +t.h, l: +t.l, q: +t.q };
-    });
-    const now = prices[sel] && prices[sel].p;
-    if (prev && now) liveDir = now > prev ? "up" : now < prev ? "down" : liveDir;
-    dirty = true;
-  };
-  ws.onclose = () => { $("dPrice").classList.remove("on"); setTimeout(connectAllPrices, 4000); };
-}
-function connectAgg() {
-  if (wsAgg) try { wsAgg.close(); } catch (e) {}
-  const mySym = sel;
-  wsAgg = new WebSocket(WSB + mySym.toLowerCase() + "@aggTrade");
-  wsAgg.onmessage = ev => {
-    if (sel !== mySym) return;
-    const d = JSON.parse(ev.data);
-    const usd = +d.p * +d.q;
-    if (usd >= whaleThr()) {
-      whales.unshift({ t: d.T, side: d.m ? "SELL" : "BUY", price: +d.p, usd });
-      if (whales.length > 50) whales.pop();
-      renderWhales();
-    }
-  };
-}
-function connectBinLiq() {
-  const ws = new WebSocket(WSB + "!forceOrder@arr");
-  ws.onopen = () => $("dLiq").classList.add("on");
-  ws.onmessage = ev => {
-    const o = JSON.parse(ev.data).o;
-    const px = +o.ap || +o.p;
-    addLiq({ t: o.T, ex: "BINANCE", coin: o.s.replace("USDT", ""), side: o.S === "SELL" ? "LONG" : "SHORT", price: px, usd: px * +o.q });
-  };
-  ws.onclose = () => { $("dLiq").classList.remove("on"); setTimeout(connectBinLiq, 4000); };
-}
-function connectBybit() {
-  const ws = new WebSocket("wss://api.bybit.com/v5/public/linear");
-  let iv = null;
-  ws.onopen = () => {
-    $("dBybit").classList.add("on");
-    const topics = bybitSyms.map(s => "liquidation." + s);
-    for (let i = 0; i < topics.length; i += 10)
-      ws.send(JSON.stringify({ op: "subscribe", args: topics.slice(i, i + 10) }));
-    iv = setInterval(() => { if (ws.readyState === 1) ws.send(JSON.stringify({ op: "ping" })); }, 20000);
-  };
-  ws.onmessage = ev => {
-    const m = JSON.parse(ev.data);
-    if (m.topic && m.topic.startsWith("liquidation") && m.data) {
-      const d = m.data;
-      addLiq({ t: +d.T, ex: "BYBIT", coin: d.s.replace("USDT", ""), side: d.S === "Sell" ? "LONG" : "SHORT", price: +d.p, usd: +d.p * +d.v });
-    }
-  };
-  ws.onclose = () => { clearInterval(iv); $("dBybit").classList.remove("on"); setTimeout(connectBybit, 5000); };
-}
-function connectOkx() {
-  const ws = new WebSocket("wss://ws.okx.com:8443/ws/v5/public");
-  let iv = null;
-  ws.onopen = () => {
-    $("dOkx").classList.add("on");
-    ws.send(JSON.stringify({ op: "subscribe", args: [{ channel: "liquidation-orders", instType: "SWAP" }] }));
-    iv = setInterval(() => { if (ws.readyState === 1) ws.send("ping"); }, 25000);
-  };
-  ws.onmessage = ev => {
-    if (ev.data === "pong") return;
-    const m = JSON.parse(ev.data);
-    if (m.data) m.data.forEach(d => {
-      if (!d.instId.endsWith("-USDT-SWAP")) return;
-      (d.details || []).forEach(dt => {
-        const px = +dt.bkPx, usd = px * +dt.sz;
-        if (usd > 0) addLiq({ t: +dt.ts, ex: "OKX", coin: d.instId.split("-")[0], side: dt.side === "sell" ? "LONG" : "SHORT", price: px, usd });
-      });
-    });
-  };
-  ws.onclose = () => { clearInterval(iv); $("dOkx").classList.remove("on"); setTimeout(connectOkx, 5000); };
+function renderOB() {
+  if (!obs) return;
+  const p = (prices[sel] && prices[sel].p) || 0;
+  const out = [...obs.bulls, ...obs.bears].map(b => `
+    <div class="ob ${b.type}">
+      <div><b>${fmt(b.bottom)} - ${fmt(b.top)}</b></div>
+      <div><span class="pill ${b.type === "bull" ? "LONG" : "SHORT"}">${b.type.toUpperCase()} OB</span></div>
+    </div>
+  `).join("");
+  $("obBox").innerHTML = out || '<div class="sub">No unmitigated order blocks in current zone.</div>';
 }
 
-/* ---------- Events ---------- */
-function onSymbol() {
-  sel = $("symbol").value;
-  whales = []; renderWhales();
-  obs = null; $("obBox").textContent = "Signal load hone ke baad dikhenge.";
-  $("smcBox").textContent = "Signal load hone ke baad dikhega.";
-  connectAgg(); getSignal(); renderLive(); renderMarket();
+function renderMarket() {
+  const tb = $("mkt");
+  const q = $("search").value.trim().toUpperCase(), mf = $("mfilter").value;
+  let list = coins.map((c, i) => ({ ...c, rank: i+1, pr: prices[c.symbol], R: results[c.symbol] }));
+  if (q) list = list.filter(x => x.symbol.includes(q));
+  if (mf === "sig") list = list.filter(x => x.R && x.R.side !== "WAIT");
+  if (mf === "long") list = list.filter(x => x.R && x.R.side === "LONG");
+  if (mf === "short") list = list.filter(x => x.R && x.R.side === "SHORT");
+
+  tb.innerHTML = list.map(x => `
+    <tr class="clickable ${x.symbol === sel ? "sel" : ""}" data-s="${x.symbol}">
+      <td>${x.rank}</td><td>${x.symbol.replace("USDT","")}</td>
+      <td>${x.pr ? fmt(x.pr.p) : "-"}</td>
+      <td class="${x.pr && x.pr.p >= x.pr.o ? "up" : "down"}">${x.pr ? ((x.pr.p - x.pr.o)/x.pr.o*100).toFixed(2)+"%" : "-"}</td>
+      <td>${x.R ? `<span class="pill ${x.R.side}">${x.R.side}</span>` : "—"}</td>
+      <td>${x.R && x.R.side !== "WAIT" ? x.R.score+"/10" : "—"}</td>
+      <td>${x.pr ? money(x.pr.q) : "-"}</td>
+    </tr>
+  `).join("") || '<tr><td colspan="7" class="sub">No matching coins found.</td></tr>';
 }
-$("go").onclick = getSignal;
-$("symbol").onchange = onSymbol;
-$("tf").onchange = () => { getSignal(); renderMarket(); };
-$("scanBtn").onclick = runScan;
-$("search").oninput = renderMarket;
-$("mfilter").onchange = renderMarket;
-$("strict").onchange = () => { reanalyzeAll(); getSignal(); };
-$("obOnly").onchange = () => { reanalyzeAll(); getSignal(); };
-$("liqSel").onchange = renderLiq;
-$("equity").oninput = updateSize;
-$("riskPct").oninput = updateSize;
-$("mkt").addEventListener("click", e => {
-  const tr = e.target.closest("tr[data-s]");
-  if (!tr) return;
-  $("symbol").value = tr.dataset.s;
-  onSymbol();
-  window.scrollTo({ top: 0, behavior: "smooth" });
-});
-$("cv").addEventListener("mousemove", e => {
-  const r = $("cv").getBoundingClientRect();
-  chartMouse = { x: e.clientX - r.left, y: e.clientY - r.top };
-  drawChart();
-});
-$("cv").addEventListener("mouseleave", () => { chartMouse = null; drawChart(); });
-let rsT = null;
-window.addEventListener("resize", () => { clearTimeout(rsT); rsT = setTimeout(drawChart, 200); });
 
-setInterval(() => { if (dirty) { dirty = false; renderLive(); renderMarket(); drawChart(); } }, 1500);
-setInterval(renderLiq, 15000);
-
-/* ---------- Init ---------- */
+/* Initialization */
 async function init() {
   try {
-    const [infoR, tickR] = await Promise.all([
-      fetch(REST + "/fapi/v1/exchangeInfo"),
-      fetch(REST + "/fapi/v1/ticker/24hr")
-    ]);
-    if (!infoR.ok || !tickR.ok) throw new Error("Binance data load nahi hua (region block ho sakta hai).");
-    const info = await infoR.json(), ticks = await tickR.json();
-    const perps = new Set(info.symbols
-      .filter(s => s.contractType === "PERPETUAL" && s.quoteAsset === "USDT" && s.status === "TRADING")
-      .map(s => s.symbol));
-    let rows = ticks.filter(t => perps.has(t.symbol));
-    rows.sort((a, b) => +b.quoteVolume - +a.quoteVolume);
-    coins = rows.slice(0, 150).map(t => ({ symbol: t.symbol }));
-    rows.forEach(t => { prices[t.symbol] = { p: +t.lastPrice, o: +t.openPrice, h: +t.highPrice, l: +t.lowPrice, q: +t.quoteVolume }; });
-    bybitSyms = coins.slice(0, 20).map(c => c.symbol);
-    $("symbol").innerHTML = coins.map(c => `<option ${c.symbol === sel ? "selected" : ""}>${c.symbol}</option>`).join("");
-    $("scanInfo").textContent = `${coins.length} USDT-M perpetual coins loaded. "Scan 150 coins" dabao signals ke liye.`;
+    const res = await fetch(`${REST}/fapi/v1/ticker/24hr`);
+    const data = await res.json();
+    const rows = data.filter(d => d.symbol.endsWith("USDT")).sort((a,b) => +b.quoteVolume - +a.quoteVolume).slice(0, 150);
+    coins = rows.map(r => ({ symbol: r.symbol }));
+    rows.forEach(r => { prices[r.symbol] = { p: +r.lastPrice, o: +r.openPrice, q: +r.quoteVolume }; });
+
+    $("symbol").innerHTML = coins.map(c => `<option value="${c.symbol}">${c.symbol}</option>`).join("");
     renderMarket();
-    connectAllPrices(); connectAgg(); connectBinLiq(); connectBybit(); connectOkx();
     getSignal();
-  } catch (e) {
-    $("mkt").innerHTML = `<tr><td colspan="7" class="err">Error: ${e.message}</td></tr>`;
-    $("live").innerHTML = `<div class="err">Data load fail: ${e.message}</div>`;
+
+    // Global Price WebSocket
+    wsMini = new WebSocket(WSB + "!miniTicker@arr");
+    wsMini.onopen = () => $("dPrice").classList.add("on");
+    wsMini.onmessage = ev => {
+      JSON.parse(ev.data).forEach(t => {
+        if (prices[t.s]) {
+          prices[t.s].p = +t.c;
+          prices[t.s].o = +t.o;
+          prices[t.s].q = +t.q;
+        }
+      });
+      if (prices[sel]) {
+        const x = prices[sel];
+        const ch = (x.p - x.o) / x.o * 100;
+        $("live").innerHTML = `
+          <div class="sub">${sel} · Live Ticker</div>
+          <div class="price ${ch >= 0 ? "up" : "down"}">${fmt(x.p)}</div>
+          <div class="${ch >= 0 ? "up" : "down"}">${ch >= 0 ? "+" : ""}${ch.toFixed(2)}% (24h)</div>`;
+      }
+    };
+  } catch(e) {
+    $("ohlc").textContent = "Init Error: " + e.message;
   }
 }
+
+$("symbol").onchange = () => { sel = $("symbol").value; getSignal(); };
+$("tf").onchange = () => getSignal();
+$("go").onclick = () => getSignal();
+$("search").oninput = renderMarket;
+$("mfilter").onchange = renderMarket;
+$("strict").onchange = () => getSignal();
+$("obOnly").onchange = () => getSignal();
+$("mkt").onclick = e => {
+  const tr = e.target.closest("tr[data-s]");
+  if (tr) { sel = tr.dataset.s; $("symbol").value = sel; getSignal(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+};
+
+window.onresize = () => drawChart();
 init();
 </script>
 </body>
