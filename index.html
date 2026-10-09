@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crypto Futures Pro Dashboard</title>
+<title>Crypto Futures Dashboard Pro - Signals, SMC, Whales, Liquidations</title>
 <style>
   :root { --bg:#0b0e14; --card:#151a23; --line:#232b38; --text:#e6e9ef; --mute:#8b94a5;
           --green:#16c784; --red:#ea3943; --yellow:#f0b90b; --blue:#4c8dff; --purple:#a78bfa; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
-  .wrap { max-width:1200px; margin:0 auto; padding:12px 10px 50px; }
-  h1 { font-size:19px; margin:4px 0 2px; }
+  .wrap { max-width:1180px; margin:0 auto; padding:12px 10px 60px; }
+  h1 { font-size:20px; margin:4px 0 2px; }
   h2 { font-size:14px; margin:0 0 8px; }
   .sub { color:var(--mute); font-size:12px; }
   .status { display:flex; gap:12px; flex-wrap:wrap; margin:6px 0 10px; font-size:11px; color:var(--mute); }
-  .dot { display:inline-block; width:7px; height:7px; border-radius:50%; background:var(--red); margin-right:4px; }
+  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--red); margin-right:4px; }
   .dot.on { background:var(--green); }
   .card { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px; }
   .cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
@@ -24,21 +24,23 @@
           border-radius:6px; padding:8px 10px; font-size:14px; }
   select, input[type=text], input[type=number] { flex:1; min-width:90px; }
   button { background:var(--yellow); color:#111; border:none; font-weight:700; cursor:pointer; }
-  button:disabled { opacity:.5; cursor:wait; }
+  button:disabled { opacity:.6; cursor:wait; }
   label.chk { font-size:12px; color:var(--mute); display:flex; align-items:center; gap:5px; }
   .price { font-size:30px; font-weight:800; font-variant-numeric:tabular-nums; }
   .up { color:var(--green); } .down { color:var(--red); }
-  .badge { display:inline-block; padding:6px 14px; border-radius:6px; font-weight:800; font-size:20px; margin:4px 0 8px; }
+  .badge { display:inline-block; padding:6px 14px; border-radius:6px; font-weight:800; font-size:20px; margin:4px 0 10px; }
   .badge small { font-size:11px; font-weight:600; margin-left:6px; opacity:.85; }
   .LONG { background:rgba(22,199,132,.15); color:var(--green); }
   .SHORT { background:rgba(234,57,67,.15); color:var(--red); }
   .WAIT { background:rgba(240,185,11,.15); color:var(--yellow); }
-  .pill { display:inline-block; padding:2px 6px; border-radius:4px; font-weight:700; font-size:10px; }
+  .pill { display:inline-block; padding:2px 7px; border-radius:5px; font-weight:700; font-size:11px; white-space:nowrap; }
   .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
   .item { background:#0f131b; border:1px solid var(--line); border-radius:6px; padding:8px; }
   .item span { display:block; color:var(--mute); font-size:11px; margin-bottom:2px; }
   .item b { font-size:14px; }
   ul { margin:6px 0 0 16px; padding:0; color:var(--mute); font-size:12px; }
+  .warn { border-color:#5a4a12; background:#1b1708; color:#e9d48a; font-size:12px; line-height:1.4; }
+  .err { color:var(--red); font-size:13px; }
   table { width:100%; border-collapse:collapse; font-size:12px; font-variant-numeric:tabular-nums; }
   th, td { padding:6px 4px; text-align:right; border-bottom:1px solid var(--line); }
   th:nth-child(-n+2), td:nth-child(-n+2) { text-align:left; }
@@ -50,93 +52,153 @@
         background:#0f131b; border-left:3px solid; font-size:12px; }
   .ob.bull { border-color:var(--green); } .ob.bear { border-color:var(--red); }
   .ob small { color:var(--mute); display:block; }
-  #cv { width:100%; height:460px; display:block; cursor:crosshair; background:#0b0e14; border-radius:6px; }
-  .flow { display:flex; height:8px; border-radius:4px; overflow:hidden; margin-top:4px; }
+  .tot { display:flex; gap:8px; margin-bottom:6px; }
+  .tot .item { flex:1; }
+  .big { background:rgba(240,185,11,.08); }
+  .ex { font-size:10px; color:var(--blue); font-weight:700; }
+  .leg { font-size:11px; color:var(--mute); }
+  .leg b { font-weight:700; }
+  #cv { width:100%; height:440px; display:block; cursor:crosshair; background:#0b0e14; border-radius:6px; }
+  .chk-item { display:flex; gap:6px; align-items:flex-start; font-size:12px; padding:3px 0; color:var(--mute); }
+  .chk-item.ok { color:var(--text); }
+  .bar { height:7px; border-radius:4px; background:#0f131b; overflow:hidden; margin-top:5px; }
+  .bar i { display:block; height:100%; }
+  .flow { display:flex; height:8px; border-radius:4px; overflow:hidden; margin-top:5px; }
+  .ev { display:inline-block; padding:2px 6px; border-radius:4px; font-size:10px; font-weight:700; margin:2px 2px 2px 0; background:#0f131b; border:1px solid var(--line); }
+  .ev.c { border-color:var(--yellow); color:var(--yellow); }
+  .ev.u { border-color:var(--green); color:var(--green); }
+  .ev.d { border-color:var(--red); color:var(--red); }
+
+  /* TradingView Style Timeframe Buttons */
+  .tv-bar { display:flex; gap:5px; overflow-x:auto; padding:4px 0 6px; margin-bottom:6px; scrollbar-width:none; }
+  .tv-bar::-webkit-scrollbar { display:none; }
+  .tf-btn { background:#0f131b; color:var(--mute); border:1px solid var(--line); border-radius:5px;
+            padding:5px 9px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
+  .tf-btn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
 </style>
 </head>
 <body>
 <div class="wrap">
   <h1>Crypto Futures Pro Dashboard</h1>
-  <div class="sub">Live Moving Candles · High Accuracy Confluence Signals · Complete Timeframes · Volume & SMC Structure</div>
+  <div class="sub">Live Moving Candles · High Accuracy SMC · TradingView Timeframes · Whale Trades · Liquidations</div>
   
   <div class="status">
-    <div><span class="dot" id="dPrice"></span>Live Feed</div>
-    <div><span class="dot" id="dCandle"></span>Candle WebSocket</div>
-    <div><span class="dot" id="dLiq"></span>Liquidation</div>
+    <div><span class="dot" id="dPrice"></span>Live Ticker</div>
+    <div><span class="dot" id="dCandle"></span>Candle Tick Stream</div>
+    <div><span class="dot" id="dLiq"></span>Binance Liq</div>
+    <div><span class="dot" id="dBybit"></span>Bybit Liq</div>
+    <div><span class="dot" id="dOkx"></span>OKX Liq</div>
   </div>
 
   <div class="card">
     <div class="row">
       <select id="symbol"></select>
-      <select id="tf">
-        <option value="1m">1 minute</option>
-        <option value="3m">3 minutes</option>
-        <option value="5m">5 minutes</option>
-        <option value="15m" selected>15 minutes</option>
-        <option value="30m">30 minutes</option>
-        <option value="1h">1 hour</option>
-        <option value="2h">2 hours</option>
-        <option value="4h">4 hours</option>
-        <option value="6h">6 hours</option>
-        <option value="8h">8 hours</option>
-        <option value="12h">12 hours</option>
-        <option value="1d">1 day</option>
-        <option value="3d">3 days</option>
-        <option value="1w">1 week</option>
-      </select>
-      <button id="go">Recalculate Signal</button>
+      <button id="go">Get Signal</button>
     </div>
     <div class="row" style="margin-top:8px">
-      <label class="chk"><input type="checkbox" id="strict" checked> Ultra Strict Mode (Multi-Confluence Only)</label>
-      <label class="chk"><input type="checkbox" id="obOnly"> Require Order Block Retest</label>
+      <label class="chk"><input type="checkbox" id="strict"> Strict Mode (Confluence Only)</label>
+      <label class="chk"><input type="checkbox" id="obOnly"> Sirf Order Block Confluence</label>
     </div>
   </div>
 
+  <!-- Chart & Timeframe Toolbar -->
   <div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:4px">
-      <h2 style="margin:0">Live Chart — <span id="cvSym">BTCUSDT</span> (<span id="cvTf">15m</span>)</h2>
-      <div class="sub">
-        <span style="color:var(--yellow)">— EMA9</span> | <span style="color:var(--blue)">— EMA21</span> | <span style="color:var(--purple)">— EMA50</span>
+      <h2 style="margin:0">Chart — <span id="cvSym">BTCUSDT</span> (<span id="cvTf" style="color:var(--yellow)">15m</span>)</h2>
+      <div class="leg">
+        <b style="color:var(--yellow)">—</b> EMA9 <b style="color:var(--blue)">—</b> EMA21 <b style="color:var(--purple)">—</b> EMA50
+        · 🟩/🟥 OB · 🟦/🟧 FVG · labels = BOS/CHoCH
       </div>
     </div>
-    <div class="sub" id="ohlc" style="margin-bottom:6px">Connecting live candle stream...</div>
+
+    <!-- Direct Timeframe Selector (TradingView Style) -->
+    <div class="tv-bar" id="tfBar">
+      <button class="tf-btn" data-tf="1m">1m</button>
+      <button class="tf-btn" data-tf="3m">3m</button>
+      <button class="tf-btn" data-tf="5m">5m</button>
+      <button class="tf-btn active" data-tf="15m">15m</button>
+      <button class="tf-btn" data-tf="30m">30m</button>
+      <button class="tf-btn" data-tf="1h">1H</button>
+      <button class="tf-btn" data-tf="2h">2H</button>
+      <button class="tf-btn" data-tf="4h">4H</button>
+      <button class="tf-btn" data-tf="1d">1D</button>
+      <button class="tf-btn" data-tf="1w">1W</button>
+    </div>
+
+    <div class="sub" id="ohlc" style="margin-bottom:4px">Chart load ho raha hai...</div>
     <canvas id="cv"></canvas>
   </div>
 
   <div class="cols">
     <div>
-      <div class="card" id="live"><div class="sub">Loading live data...</div></div>
+      <div class="card" id="live"><div class="sub">Live ticker load ho raha hai...</div></div>
       <div id="result"></div>
-    </div>
-    <div>
+      
+      <!-- Whale Trades Section -->
       <div class="card">
-        <h2>SMC & Liquidity Confluence</h2>
-        <div id="smcBox" class="sub">Awaiting signal calculation...</div>
+        <h2>Whale Trades 🐋 (Large Orders Realtime)</h2>
+        <div id="whaleSum" class="sub" style="margin-bottom:6px">Trades capture ho rahe hain...</div>
+        <div class="scroll" style="max-height:220px">
+          <table><thead><tr><th>Time</th><th>Side</th><th>Price</th><th>USD</th></tr></thead>
+          <tbody id="whaleFeed"><tr><td colspan="4" class="sub">Whale ka wait hai...</td></tr></tbody></table>
+        </div>
       </div>
+    </div>
+
+    <div>
+      <!-- SMC Panel -->
       <div class="card">
-        <h2>Order Blocks (Institutional Footprints)</h2>
+        <h2>SMC / Price Action Structure</h2>
+        <div id="smcBox" class="sub">Signal aane par activate hoga.</div>
+      </div>
+
+      <!-- Order Blocks -->
+      <div class="card">
+        <h2>Order Blocks (Unmitigated)</h2>
         <div id="obBox" class="sub">Awaiting candles...</div>
+      </div>
+
+      <!-- Liquidations Section -->
+      <div class="card">
+        <h2>Live Liquidations (Binance + Bybit + OKX)</h2>
+        <div id="liqTot" class="tot"></div>
+        <div id="liqEx" class="sub" style="margin-bottom:6px"></div>
+        <label class="chk" style="margin-bottom:6px"><input type="checkbox" id="liqSel"> Sirf current coin</label>
+        <div class="scroll" style="max-height:220px">
+          <table><thead><tr><th>Time</th><th>Exch</th><th>Coin</th><th>Type</th><th>Price</th><th>USD</th></tr></thead>
+          <tbody id="liqFeed"><tr><td colspan="6" class="sub">Liquidations streaming...</td></tr></tbody></table>
+        </div>
       </div>
     </div>
   </div>
 
+  <!-- Scanner -->
   <div class="card">
     <div class="row" style="margin-bottom:6px">
-      <h2 style="margin:0">Market Scanner (Top 150)</h2>
+      <h2 style="margin:0">Top 150 Coins Scanner</h2>
       <input type="text" id="search" placeholder="Search (BTC, SOL...)">
-      <select id="mfilter" style="max-width:160px">
-        <option value="all">All Coins</option>
-        <option value="sig">Active Signals</option>
+      <select id="mfilter" style="max-width:180px">
+        <option value="all">Sab Coins</option>
+        <option value="sig">Sirf Signals</option>
         <option value="long">LONG Only</option>
         <option value="short">SHORT Only</option>
       </select>
-      <button id="scanBtn">Scan Top 150</button>
+      <button id="scanBtn">Scan 150 Coins</button>
     </div>
     <div class="sub" id="scanInfo" style="margin-bottom:6px"></div>
     <div class="scroll">
       <table><thead><tr><th>#</th><th>Coin</th><th>Price</th><th>24h %</th><th>Signal</th><th>Score</th><th>24h Volume</th></tr></thead>
       <tbody id="mkt"><tr><td colspan="7" class="sub">Loading market...</td></tr></tbody></table>
     </div>
+  </div>
+
+  <div class="card">
+    <h2>Position Size Calculator</h2>
+    <div class="row">
+      <input id="equity" type="number" placeholder="Account Equity (USDT)" value="1000">
+      <input id="riskPct" type="number" step="0.1" placeholder="Risk % per trade" value="1">
+    </div>
+    <div id="sizeOut" class="sub" style="margin-top:8px">Signal aane par calculated size yahan dikhega.</div>
   </div>
 </div>
 
@@ -146,284 +208,443 @@ const WSB  = "wss://fstream.binance.com/ws/";
 const $ = id => document.getElementById(id);
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-let coins = [], prices = {}, sel = "BTCUSDT", obs = null, lastSig = null;
-let kCache = {}, results = {}, reqId = 0, scanId = 0, chartMouse = null;
-let wsCandle = null, curCandle = null, wsMini = null;
+let coins = [], prices = {}, sel = "BTCUSDT", activeTf = "15m", obs = null, lastSig = null;
+let liqs = [], whales = [], reqId = 0, scanId = 0, chartMouse = null;
+let kCache = {}, results = {}, wsCandle = null, wsAgg = null, bybitSyms = [];
 
 const fmt = x => x >= 100 ? x.toFixed(2) : x >= 1 ? x.toFixed(4) : x >= 0.001 ? x.toFixed(5) : x.toFixed(8);
 const money = x => x >= 1e9 ? (x/1e9).toFixed(2)+"B" : x >= 1e6 ? (x/1e6).toFixed(2)+"M" : (x/1e3).toFixed(1)+"K";
-const curTf = () => $("tf").value;
+const tstr = t => new Date(t).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 const key = (s, tf) => `${s}_${tf}`;
 
 /* Indicators */
-function ema(arr, n) {
-  const out = new Array(arr.length).fill(null);
-  if (arr.length < n) return out;
-  let sum = 0;
-  for (let i = 0; i < n; i++) sum += arr[i];
+function ema(vals, n) {
+  const out = new Array(vals.length).fill(null);
+  if (vals.length < n) return out;
+  let sum = 0; for (let i = 0; i < n; i++) sum += vals[i];
   out[n-1] = sum / n;
   const k = 2 / (n + 1);
-  for (let i = n; i < arr.length; i++) out[i] = arr[i] * k + out[i-1] * (1 - k);
+  for (let i = n; i < vals.length; i++) out[i] = vals[i] * k + out[i-1] * (1 - k);
   return out;
 }
-function rsi(c, n = 14) {
-  const out = new Array(c.length).fill(null);
+function rsi(close, n = 14) {
+  const out = new Array(close.length).fill(null);
   let g = 0, l = 0;
-  for (let i = 1; i <= n; i++) { const d = c[i] - c[i-1]; if (d >= 0) g += d; else l -= d; }
+  for (let i = 1; i <= n; i++) { const d = close[i] - close[i-1]; if (d >= 0) g += d; else l -= d; }
   g /= n; l /= n;
   out[n] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
-  for (let i = n + 1; i < c.length; i++) {
-    const d = c[i] - c[i-1];
-    g = (g * (n - 1) + Math.max(d, 0)) / n;
-    l = (l * (n - 1) + Math.max(-d, 0)) / n;
+  for (let i = n + 1; i < close.length; i++) {
+    const d = close[i] - close[i-1];
+    g = (g * (n-1) + Math.max(d, 0)) / n;
+    l = (l * (n-1) + Math.max(-d, 0)) / n;
     out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
   }
   return out;
 }
-function atr(h, l, c, n = 14) {
-  const tr = [h[0] - l[0]];
-  for (let i = 1; i < c.length; i++) tr.push(Math.max(h[i] - l[i], Math.abs(h[i] - c[i-1]), Math.abs(l[i] - c[i-1])));
+function atr(h, lo, c, n = 14) {
+  const tr = [h[0] - lo[0]];
+  for (let i = 1; i < c.length; i++)
+    tr.push(Math.max(h[i] - lo[i], Math.abs(h[i] - c[i-1]), Math.abs(lo[i] - c[i-1])));
   const out = new Array(c.length).fill(null);
-  let s = 0;
-  for (let i = 0; i < n; i++) s += tr[i];
-  out[n-1] = s / n;
-  for (let i = n; i < c.length; i++) out[i] = (out[i-1] * (n - 1) + tr[i]) / n;
+  let a = 0; for (let i = 0; i < n; i++) a += tr[i];
+  a /= n; out[n-1] = a;
+  for (let i = n; i < c.length; i++) { a = (a * (n-1) + tr[i]) / n; out[i] = a; }
   return out;
 }
 
-/* Advanced SMC & Order Blocks */
+/* SMC Functions */
+function swings(H, L, w = 3) {
+  const hi = [], lo = [];
+  for (let i = w; i < H.length - w; i++) {
+    let isH = true, isL = true;
+    for (let j = i - w; j <= i + w; j++) {
+      if (j === i) continue;
+      if (H[j] >= H[i]) isH = false;
+      if (L[j] <= L[i]) isL = false;
+    }
+    if (isH) hi.push({ i, p: H[i] });
+    if (isL) lo.push({ i, p: L[i] });
+  }
+  return { hi, lo };
+}
+function marketStructure(T, H, L, C) {
+  const w = 3, n = C.length, sw = swings(H, L, w);
+  const evs = [];
+  let hiP = null, loP = null, trend = 0, hp = 0, lp = 0;
+  for (let i = 0; i < n; i++) {
+    while (hp < sw.hi.length && sw.hi[hp].i + w <= i) { hiP = sw.hi[hp++].p; }
+    while (lp < sw.lo.length && sw.lo[lp].i + w <= i) { loP = sw.lo[lp++].p; }
+    if (hiP != null && C[i] > hiP) {
+      evs.push({ i, p: hiP, dir: 1, type: trend === -1 ? "CHoCH" : "BOS" });
+      trend = 1; hiP = null;
+    }
+    if (loP != null && C[i] < loP) {
+      evs.push({ i, p: loP, dir: -1, type: trend === 1 ? "CHoCH" : "BOS" });
+      trend = -1; loP = null;
+    }
+  }
+  const conf = sw.hi.filter(s => s.i + w <= n - 1), confl = sw.lo.filter(s => s.i + w <= n - 1);
+  return { trend, evs: evs.slice(-6), lastH: conf.pop() || null, lastL: confl.pop() || null, sw };
+}
 function findOrderBlocks(t, o, h, l, c, a) {
   const n = c.length, bulls = [], bears = [];
   for (let i = 15; i < n - 2; i++) {
     if (a[i] == null) continue;
-    if (c[i] < o[i] && c[i+1] > o[i+1] && (h[i+1] - l[i+1] >= 1.2 * a[i])) {
-      let mit = false;
-      for (let j = i + 2; j < n; j++) if (c[j] < l[i]) { mit = true; break; }
-      if (!mit) bulls.push({ type:"bull", top:h[i], bottom:l[i], time:t[i], idx:i });
+    const end = Math.min(i + 3, n - 1);
+    let prevHigh = -Infinity, prevLow = Infinity;
+    for (let j = i - 10; j < i; j++) { prevHigh = Math.max(prevHigh, h[j]); prevLow = Math.min(prevLow, l[j]); }
+    if (c[i] < o[i] && c[i+1] > o[i+1]) {
+      let maxH = -Infinity, bos = false;
+      for (let j = i + 1; j <= end; j++) { maxH = Math.max(maxH, h[j]); if (c[j] > prevHigh) bos = true; }
+      if (bos && maxH - c[i] >= 1.5 * a[i]) {
+        let mit = false;
+        for (let j = end + 1; j < n; j++) if (c[j] < l[i]) { mit = true; break; }
+        if (!mit) bulls.push({ type:"bull", top:h[i], bottom:l[i], time:t[i], idx:i });
+      }
     }
-    if (c[i] > o[i] && c[i+1] < o[i+1] && (h[i+1] - l[i+1] >= 1.2 * a[i])) {
-      let mit = false;
-      for (let j = i + 2; j < n; j++) if (c[j] > h[i]) { mit = true; break; }
-      if (!mit) bears.push({ type:"bear", top:h[i], bottom:l[i], time:t[i], idx:i });
+    if (c[i] > o[i] && c[i+1] < o[i+1]) {
+      let minL = Infinity, bos = false;
+      for (let j = i + 1; j <= end; j++) { minL = Math.min(minL, l[j]); if (c[j] < prevLow) bos = true; }
+      if (bos && c[i] - minL >= 1.5 * a[i]) {
+        let mit = false;
+        for (let j = end + 1; j < n; j++) if (c[j] > h[i]) { mit = true; break; }
+        if (!mit) bears.push({ type:"bear", top:h[i], bottom:l[i], time:t[i], idx:i });
+      }
     }
   }
-  const px = c[n-1];
-  bulls.sort((x, y) => Math.abs(px - x.top) - Math.abs(px - y.top));
-  bears.sort((x, y) => Math.abs(px - x.bottom) - Math.abs(px - y.bottom));
+  const price = c[n-1];
+  bulls.sort((x, y) => Math.abs(price - x.top) - Math.abs(price - y.top));
+  bears.sort((x, y) => Math.abs(price - x.bottom) - Math.abs(price - y.bottom));
   return { bulls: bulls.slice(0, 3), bears: bears.slice(0, 3) };
 }
+function findFVG(t, h, l, c, a) {
+  const n = c.length, bull = [], bear = [];
+  for (let i = 0; i < n - 2; i++) {
+    if (l[i+2] > h[i]) {
+      const size = l[i+2] - h[i];
+      if (a[i+1] && size >= 0.1 * a[i+1]) {
+        let mit = false;
+        for (let j = i + 3; j < n; j++) if (l[j] <= h[i]) { mit = true; break; }
+        if (!mit) bull.push({ top: l[i+2], bottom: h[i], idx: i+1 });
+      }
+    }
+    if (h[i+2] < l[i]) {
+      const size = l[i] - h[i+2];
+      if (a[i+1] && size >= 0.1 * a[i+1]) {
+        let mit = false;
+        for (let j = i + 3; j < n; j++) if (h[j] >= l[i]) { mit = true; break; }
+        if (!mit) bear.push({ top: l[i], bottom: h[i+2], idx: i+1 });
+      }
+    }
+  }
+  return { bull: bull.slice(-3), bear: bear.slice(-3) };
+}
+function premiumDiscount(h, l, price) {
+  let hi = -Infinity, lo = Infinity;
+  for (let i = Math.max(0, h.length - 120); i < h.length; i++) { hi = Math.max(hi, h[i]); lo = Math.min(lo, l[i]); }
+  const pos = hi > lo ? (price - lo) / (hi - lo) * 100 : 50;
+  return { pos, zone: pos > 55 ? "Premium" : pos < 45 ? "Discount" : "Equilibrium" };
+}
 
-/* High-Accuracy Signal Analysis */
+/* Strategy & Backtesting */
+function buildStrat(dir, o) {
+  const L = dir === "LONG";
+  const poi = L ? (o.ob.bulls[0] || o.fvg.bull[0]) : (o.ob.bears[0] || o.fvg.bear[0]);
+  const items = [
+    { ok: o.e200 ? (L ? o.price > o.e200 : o.price < o.e200) : (L ? o.e21 > o.e50 : o.e21 < o.e50), txt: `HTF Trend Bias (${L ? "Bullish" : "Bearish"})` },
+    { ok: o.struct.trend === (L ? 1 : -1), txt: `Market Structure Shift (${L ? "BOS/CHoCH Up" : "BOS/CHoCH Down"})` },
+    { ok: L ? o.pd.pos <= 55 : o.pd.pos >= 45, txt: `Location: ${L ? "Discount" : "Premium"} Zone (${o.pd.pos.toFixed(0)}%)` },
+    { ok: !!poi, txt: `Institutional Point of Interest (OB / FVG Available)` },
+    { ok: L ? (o.rsi >= 45 && o.rsi <= 68) : (o.rsi >= 32 && o.rsi <= 55), txt: `Momentum Sweet Spot (RSI ${o.rsi.toFixed(0)})` },
+    { ok: L ? o.buyRatio >= 0.5 : o.buyRatio <= 0.5, txt: `Taker Orderflow Dominance (${(o.buyRatio*100).toFixed(0)}% ${L?"Buy":"Sell"})` }
+  ];
+  const ready = items.filter(x => x.ok).length;
+  const entry = poi ? (poi.top + poi.bottom) / 2 : o.price;
+  const sl = L ? (poi ? poi.bottom - 0.5 * o.A : o.price - 1.5 * o.A) : (poi ? poi.top + 0.5 * o.A : o.price + 1.5 * o.A);
+  const risk = Math.abs(entry - sl);
+  const tp = L ? entry + 2.5 * risk : entry - 2.5 * risk;
+  return { dir, items, ready, entry, sl, tp, rr: risk > 0 ? (Math.abs(tp - entry)/risk) : 2 };
+}
+
+function backtest(k) {
+  if (k.length < 100) return null;
+  const H = k.map(x=>+x[2]), L = k.map(x=>+x[3]), C = k.map(x=>+x[4]);
+  const e9 = ema(C,9), e21 = ema(C,21), e50 = ema(C,50), r = rsi(C), a = atr(H,L,C);
+  let wins = 0, losses = 0, grossW = 0, grossL = 0, i = 50;
+  while (i < C.length - 2) {
+    if (!a[i]) { i++; continue; }
+    let d = 0;
+    if (e9[i] > e21[i] && C[i] > e50[i] && r[i] >= 48 && r[i] <= 70) d = 1;
+    else if (e9[i] < e21[i] && C[i] < e50[i] && r[i] <= 52 && r[i] >= 30) d = -1;
+    if (!d) { i++; continue; }
+    const entry = C[i], sl = d === 1 ? entry - 1.5 * a[i] : entry + 1.5 * a[i], tp = d === 1 ? entry + 3 * a[i] : entry - 3 * a[i];
+    let out = 0;
+    for (let j = i + 1; j < Math.min(C.length, i + 50); j++) {
+      if (d === 1) { if (L[j] <= sl) { out = -1; break; } if (H[j] >= tp) { out = 2; break; } }
+      else { if (H[j] >= sl) { out = -1; break; } if (L[j] <= tp) { out = 2; break; } }
+    }
+    if (out > 0) { wins++; grossW += out; } else if (out < 0) { losses++; grossL -= out; }
+    i += 10;
+  }
+  const t = wins + losses;
+  return t ? { trades: t, win: (wins/t)*100, pf: grossL > 0 ? (grossW/grossL) : 99 } : null;
+}
+
+/* Master Analysis */
 function analyze(k, opts = { strict: $("strict").checked, obOnly: $("obOnly").checked }) {
   const n = k.length;
   if (n < 60) return null;
-  const T = k.map(x => +x[0]), O = k.map(x => +x[1]), H = k.map(x => +x[2]),
-        L = k.map(x => +x[3]), C = k.map(x => +x[4]), V = k.map(x => +x[5]);
-  const e9 = ema(C, 9), e21 = ema(C, 21), e50 = ema(C, 50), e200 = ema(C, 200);
-  const r = rsi(C), a = atr(H, L, C);
+  const T = k.map(x=>+x[0]), O = k.map(x=>+x[1]), H = k.map(x=>+x[2]),
+        L = k.map(x=>+x[3]), C = k.map(x=>+x[4]), V = k.map(x=>+x[5]), TB = k.map(x=>+x[9]||+x[5]*0.5);
+  const e9 = ema(C,9), e21 = ema(C,21), e50 = ema(C,50), e200 = ema(C,200), r = rsi(C), a = atr(H,L,C);
   const i = n - 1, price = C[i], A = a[i];
-
   if (!A || r[i] == null || e50[i] == null) return null;
 
   let vAvg = 0; for (let j = i - 20; j < i; j++) vAvg += V[j]; vAvg /= 20;
   const vr = vAvg > 0 ? V[i] / vAvg : 1;
+
   const ob = findOrderBlocks(T, O, H, L, C, a);
+  const struct = marketStructure(T, H, L, C);
+  const fvg = findFVG(T, H, L, C, a);
+  const pd = premiumDiscount(H, L, price);
 
-  const bullNearOB = ob.bulls.some(b => price >= b.bottom * 0.998 && price <= b.top + 1.2 * A);
-  const bearNearOB = ob.bears.some(b => price <= b.top * 1.002 && price >= b.bottom - 1.2 * A);
+  let tb = 0, tv = 0;
+  for (let j = Math.max(0, n - 40); j < n; j++) { tb += TB[j]; tv += V[j]; }
+  const buyRatio = tv > 0 ? tb / tv : 0.5;
 
-  const trendUp = e9[i] > e21[i] && e21[i] > e50[i] && (e200[i] == null || price > e200[i]);
-  const trendDn = e9[i] < e21[i] && e21[i] < e50[i] && (e200[i] == null || price < e200[i]);
+  const bullNear = ob.bulls.some(b => price >= b.bottom * 0.998 && price <= b.top + 1.2 * A);
+  const bearNear = ob.bears.some(b => price <= b.top * 1.002 && price >= b.bottom - 1.2 * A);
 
-  let score = 0, side = "WAIT", why = [];
+  let side = "WAIT", score = 0, why = [];
+  const trendUp = e9[i] > e21[i] && price > e50[i] && r[i] >= 46 && r[i] <= 72;
+  const trendDn = e9[i] < e21[i] && price < e50[i] && r[i] <= 54 && r[i] >= 28;
 
-  if (trendUp && r[i] >= (opts.strict ? 48 : 42) && r[i] <= 70) {
-    score += 3;
-    why.push("Bullish trend alignment (EMA 9 > 21 > 50)");
-    if (vr >= 1.2) { score += 2; why.push(`Volume expansion confirmed (${vr.toFixed(2)}x)`); }
-    if (bullNearOB) { score += 3; why.push("Inside/Retesting Bullish Institutional Order Block"); }
-    if (r[i] >= 50 && r[i] <= 62) { score += 1; why.push("RSI in optimum momentum buy-zone"); }
-    if (score >= (opts.strict ? 7 : 5)) side = "LONG";
-  } else if (trendDn && r[i] <= (opts.strict ? 52 : 58) && r[i] >= 30) {
-    score += 3;
-    why.push("Bearish trend alignment (EMA 9 < 21 < 50)");
-    if (vr >= 1.2) { score += 2; why.push(`Bearish volume pressure (${vr.toFixed(2)}x)`); }
-    if (bearNearOB) { score += 3; why.push("Inside/Retesting Bearish Institutional Order Block"); }
-    if (r[i] <= 50 && r[i] >= 38) { score += 1; why.push("RSI in optimum sell momentum"); }
-    if (score >= (opts.strict ? 7 : 5)) side = "SHORT";
+  if (trendUp) {
+    side = "LONG"; score += 3;
+    why.push("Bullish trend (EMA9 > EMA21 and Price > EMA50)");
+    if (bullNear) { score += 3; why.push("Bullish Order Block retest (+3)"); }
+    if (struct.trend === 1) { score += 2; why.push("Market structure aligned (BOS Up) (+2)"); }
+    if (vr >= 1.2) { score += 1; why.push(`Volume surge confirmed (${vr.toFixed(2)}x) (+1)`); }
+  } else if (trendDn) {
+    side = "SHORT"; score += 3;
+    why.push("Bearish trend (EMA9 < EMA21 and Price < EMA50)");
+    if (bearNear) { score += 3; why.push("Bearish Order Block retest (+3)"); }
+    if (struct.trend === -1) { score += 2; why.push("Market structure aligned (BOS Down) (+2)"); }
+    if (vr >= 1.2) { score += 1; why.push(`Volume selling pressure (${vr.toFixed(2)}x) (+1)`); }
   }
 
-  if (opts.obOnly && side !== "WAIT") {
-    if ((side === "LONG" && !bullNearOB) || (side === "SHORT" && !bearNearOB)) {
-      side = "WAIT";
-      why.push("Strict Filter: Dismissed (No direct Order Block confluence)");
-    }
-  }
+  if (opts.strict && score < 6) side = "WAIT";
+  if (opts.obOnly && side !== "WAIT" && !bullNear && !bearNear) { side = "WAIT"; why.push("Filter: Dismissed (No direct OB confluence)"); }
 
-  const sl = side === "LONG" ? price - 1.6 * A : side === "SHORT" ? price + 1.6 * A : null;
-  const tp = side === "LONG" ? price + 3.2 * A : side === "SHORT" ? price - 3.2 * A : null;
+  const sl = side === "LONG" ? price - 1.5 * A : side === "SHORT" ? price + 1.5 * A : null;
+  const tp = side === "LONG" ? price + 3 * A : side === "SHORT" ? price - 3 * A : null;
+  const strat = side !== "WAIT" ? buildStrat(side, { price, A, e200:e200[i], e21:e21[i], e50:e50[i], rsi:r[i], struct, ob, fvg, pd, buyRatio }) : null;
 
-  return { side, score, price, sl, tp, A, rsi: r[i], e9: e9[i], e21: e21[i], e50: e50[i], why, ob, vr, tf: curTf() };
+  return { side, score, price, sl, tp, A, rsi: r[i], e9: e9[i], e21: e21[i], e50: e50[i], e200: e200[i], why, ob, struct, fvg, pd, buyRatio, strat, vr, tf: activeTf };
 }
 
-/* Fetch & Stream Candlesticks */
+/* Candlestick & Tick WebSocket */
 async function fetchKlines(sym, tf) {
-  const res = await fetch(`${REST}/fapi/v1/klines?symbol=${sym}&interval=${tf}&limit=160`);
-  if (!res.ok) throw new Error("Binance API Blocked or Rate Limited");
-  return await res.json();
+  const r = await fetch(`${REST}/fapi/v1/klines?symbol=${sym}&interval=${tf}&limit=140`);
+  return await r.json();
 }
-
 function listenCandleStream(sym, tf) {
   if (wsCandle) { try { wsCandle.close(); } catch(e){} }
-  const streamUrl = `${WSB}${sym.toLowerCase()}@kline_${tf}`;
-  wsCandle = new WebSocket(streamUrl);
+  wsCandle = new WebSocket(`${WSB}${sym.toLowerCase()}@kline_${tf}`);
   wsCandle.onopen = () => $("dCandle").classList.add("on");
   wsCandle.onmessage = e => {
-    const msg = JSON.parse(e.data);
-    if (!msg.k) return;
-    const k = msg.k;
-    const candleObj = [+k.t, +k.o, +k.h, +k.l, +k.c, +k.v, +k.T];
-    const cacheKey = key(sym, tf);
-    if (kCache[cacheKey]) {
-      const arr = kCache[cacheKey];
-      if (arr[arr.length - 1][0] === candleObj[0]) {
-        arr[arr.length - 1] = candleObj; // Live Update current candle
-      } else {
-        arr.push(candleObj);
-        arr.shift();
-      }
+    const k = JSON.parse(e.data).k;
+    if (!k) return;
+    const cObj = [+k.t, +k.o, +k.h, +k.l, +k.c, +k.v, +k.T];
+    const arr = kCache[key(sym, tf)];
+    if (arr) {
+      if (arr[arr.length - 1][0] === cObj[0]) arr[arr.length - 1] = cObj;
+      else { arr.push(cObj); arr.shift(); }
       drawChart();
     }
   };
-  wsCandle.onclose = () => { $("dCandle").classList.remove("on"); };
+  wsCandle.onclose = () => $("dCandle").classList.remove("on");
 }
 
-/* Draw Canvas Chart With Live Candle & Volume */
+/* Canvas Chart */
 function drawChart() {
-  const cv = $("cv");
-  const W = cv.clientWidth, H = cv.clientHeight;
+  const cv = $("cv"), W = cv.clientWidth, H = cv.clientHeight;
   if (!W) return;
   const dpr = window.devicePixelRatio || 1;
-  if (cv.width !== Math.round(W * dpr)) { cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr); }
+  cv.width = W * dpr; cv.height = H * dpr;
   const ctx = cv.getContext("2d");
-  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.clearRect(0, 0, W, H);
+  ctx.scale(dpr, dpr);
 
-  const k = kCache[key(sel, curTf())];
+  const k = kCache[key(sel, activeTf)];
   if (!k || !k.length) return;
+  const R = results[sel];
 
-  const N = Math.min(100, k.length), data = k.slice(k.length - N);
-  const C = data.map(x => +x[4]), e9 = ema(C, 9), e21 = ema(C, 21), e50 = ema(C, 50);
+  const N = Math.min(100, k.length), start = k.length - N, data = k.slice(start);
+  const C = data.map(x=>+x[4]), e9 = ema(C,9), e21 = ema(C,21), e50 = ema(C,50);
 
-  const axW = 65, plotW = W - axW, volH = 75, priceH = H - volH - 24;
+  const axW = 65, plotW = W - axW, volH = 65, priceH = H - volH - 24;
   let mn = Infinity, mx = -Infinity, maxVol = 0;
   data.forEach(x => {
-    mn = Math.min(mn, +x[3]);
-    mx = Math.max(mx, +x[2]);
-    maxVol = Math.max(maxVol, +x[5]);
+    mn = Math.min(mn, +x[3]); mx = Math.max(mx, +x[2]); maxVol = Math.max(maxVol, +x[5]);
   });
+  if (R) {
+    [...R.ob.bulls, ...R.ob.bears].forEach(b => { mn = Math.min(mn, b.bottom); mx = Math.max(mx, b.top); });
+    if (R.sl) { mn = Math.min(mn, R.sl); mx = Math.max(mx, R.tp); }
+  }
   const pad = (mx - mn) * 0.05 || 1; mn -= pad; mx += pad;
-
   const y = p => 10 + (mx - p) / (mx - mn) * (priceH - 20);
   const bw = plotW / N, x = i => i * bw + bw / 2;
 
   // Grid
-  ctx.strokeStyle = "#171d27"; ctx.fillStyle = "#8b94a5"; ctx.font = "10px sans-serif";
+  ctx.strokeStyle = "#161c26"; ctx.fillStyle = "#8b94a5"; ctx.font = "10px sans-serif";
   for (let g = 0; g <= 4; g++) {
     const p = mx - (mx - mn) / 4 * g;
     ctx.beginPath(); ctx.moveTo(0, y(p)); ctx.lineTo(plotW, y(p)); ctx.stroke();
     ctx.fillText(fmt(p), plotW + 5, y(p) + 3);
   }
 
-  // Volume Bars
+  // Volume
   data.forEach((d, i) => {
-    const isUp = +d[4] >= +d[1];
-    const vHeight = maxVol > 0 ? (+d[5] / maxVol) * (volH - 12) : 0;
-    ctx.fillStyle = isUp ? "rgba(22,199,132,0.3)" : "rgba(234,57,67,0.3)";
-    ctx.fillRect(i * bw + 1, H - 20 - vHeight, bw - 2, vHeight);
+    const up = +d[4] >= +d[1];
+    const vh = maxVol > 0 ? (+d[5] / maxVol) * (volH - 10) : 0;
+    ctx.fillStyle = up ? "rgba(22,199,132,0.25)" : "rgba(234,57,67,0.25)";
+    ctx.fillRect(i * bw + 1, H - 20 - vh, bw - 2, vh);
   });
 
-  // Candles (Wicks + Bodies)
-  data.forEach((d, i) => {
-    const o = +d[1], h = +d[2], l = +d[3], c = +d[4], isUp = c >= o;
-    const col = isUp ? "#16c784" : "#ea3943";
-    ctx.strokeStyle = col; ctx.fillStyle = col;
-    
-    // Wick
-    ctx.beginPath();
-    ctx.moveTo(x(i), y(h));
-    ctx.lineTo(x(i), y(l));
-    ctx.stroke();
+  // OB & FVG Zones
+  if (R) {
+    const drawZone = (b, col) => {
+      const xx = Math.max(0, (b.idx - start)) * bw;
+      ctx.fillStyle = col;
+      ctx.fillRect(xx, y(b.top), plotW - xx, Math.max(2, y(b.bottom) - y(b.top)));
+    };
+    R.ob.bulls.forEach(b => drawZone(b, "rgba(22,199,132,0.18)"));
+    R.ob.bears.forEach(b => drawZone(b, "rgba(234,57,67,0.18)"));
+    R.fvg.bull.forEach(f => { if(f.idx >= start) drawZone(f, "rgba(76,141,255,0.14)"); });
+    R.fvg.bear.forEach(f => { if(f.idx >= start) drawZone(f, "rgba(240,185,11,0.14)"); });
+  }
 
-    // Body
+  // Candlesticks
+  data.forEach((d, i) => {
+    const o = +d[1], h = +d[2], l = +d[3], c = +d[4], up = c >= o;
+    const col = up ? "#16c784" : "#ea3943";
+    ctx.strokeStyle = col; ctx.fillStyle = col;
+    ctx.beginPath(); ctx.moveTo(x(i), y(h)); ctx.lineTo(x(i), y(l)); ctx.stroke();
     const topY = y(Math.max(o, c)), botY = y(Math.min(o, c));
-    ctx.fillRect(x(i) - (bw * 0.75)/2, topY, Math.max(1, bw * 0.75), Math.max(1.5, botY - topY));
+    ctx.fillRect(x(i) - (bw * 0.75)/2, topY, bw * 0.75, Math.max(1.5, botY - topY));
   });
 
   // EMAs
-  const renderLine = (arr, col) => {
+  const drawLine = (arr, col) => {
     ctx.strokeStyle = col; ctx.lineWidth = 1.3; ctx.beginPath();
-    let started = false;
+    let s = false;
     arr.forEach((v, i) => {
       if (v == null) return;
-      const xx = x(i), yy = y(v);
-      if (!started) { ctx.moveTo(xx, yy); started = true; } else ctx.lineTo(xx, yy);
+      if (!s) { ctx.moveTo(x(i), y(v)); s = true; } else ctx.lineTo(x(i), y(v));
     });
-    ctx.stroke(); ctx.lineWidth = 1;
+    ctx.stroke();
   };
-  renderLine(e9, "#f0b90b"); renderLine(e21, "#4c8dff"); renderLine(e50, "#a78bfa");
+  drawLine(e9, "#f0b90b"); drawLine(e21, "#4c8dff"); drawLine(e50, "#a78bfa");
 
-  // Last Price Line
+  // SMC Labels (BOS / CHoCH)
+  if (R) {
+    ctx.font = "9px sans-serif"; ctx.textAlign = "center";
+    R.struct.evs.forEach(ev => {
+      if (ev.i < start || ev.i >= k.length) return;
+      const vi = ev.i - start;
+      const yy = ev.dir === 1 ? y(+data[vi][3]) + 14 : y(+data[vi][2]) - 6;
+      ctx.fillStyle = ev.type === "CHoCH" ? "#f0b90b" : ev.dir === 1 ? "#16c784" : "#ea3943";
+      ctx.fillText(ev.type + (ev.dir === 1 ? "↑" : "↓"), x(vi), yy);
+    });
+    ctx.textAlign = "left";
+
+    // SL / TP
+    if (R.sl) {
+      const hline = (p, col, txt) => {
+        ctx.strokeStyle = col; ctx.setLineDash([4, 4]);
+        ctx.beginPath(); ctx.moveTo(0, y(p)); ctx.lineTo(plotW, y(p)); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = col; ctx.fillText(txt, 4, y(p) - 3);
+      };
+      hline(R.sl, "#ea3943", "SL " + fmt(R.sl));
+      hline(R.tp, "#16c784", "TP " + fmt(R.tp));
+    }
+  }
+
+  // Last Price
   const lastC = +data[data.length - 1][4];
   ctx.strokeStyle = "rgba(230,233,239,0.4)"; ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.moveTo(0, y(lastC)); ctx.lineTo(plotW, y(lastC)); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle = "#202a3b"; ctx.fillRect(plotW + 2, y(lastC) - 8, axW - 4, 16);
+  ctx.fillStyle = "#1e2634"; ctx.fillRect(plotW + 2, y(lastC) - 8, axW - 4, 16);
   ctx.fillStyle = "#e6e9ef"; ctx.fillText(fmt(lastC), plotW + 5, y(lastC) + 3);
 
-  // Live Candle OHLC Header Update
   const cur = data[data.length - 1];
   $("ohlc").innerHTML = `O: <b>${fmt(+cur[1])}</b> H: <b>${fmt(+cur[2])}</b> L: <b>${fmt(+cur[3])}</b> C: <b>${fmt(+cur[4])}</b> Vol: <b>${money(+cur[5])}</b>`;
 }
 
-/* Master Signal Flow */
-async function getSignal() {
+/* Master Data Loader */
+async function loadData() {
   const my = ++reqId, btn = $("go");
-  btn.disabled = true; btn.textContent = "Calculating...";
+  btn.disabled = true; btn.textContent = "Loading...";
   try {
-    const s = sel, tf = curTf();
-    $("cvSym").textContent = s; $("cvTf").textContent = tf;
-    const k = await fetchKlines(s, tf);
+    $("cvSym").textContent = sel;
+    $("cvTf").textContent = activeTf;
+    const k = await fetchKlines(sel, activeTf);
     if (my !== reqId) return;
-    kCache[key(s, tf)] = k;
-    listenCandleStream(s, tf);
-    drawChart();
+    kCache[key(sel, activeTf)] = k;
+    listenCandleStream(sel, activeTf);
 
     const R = analyze(k);
-    results[s] = R;
-    obs = R.ob;
+    results[sel] = R;
+    obs = R.ob; lastSig = R.side !== "WAIT" ? { price: R.price, sl: R.sl } : null;
+    const bt = backtest(k);
 
     $("result").innerHTML = `
       <div class="card">
-        <div class="badge ${R.side}">${R.side} <small>Confidence ${R.score}/10</small></div>
+        <div class="badge ${R.side}">${R.side} <small>Score ${R.score}/9</small></div>
         <div class="grid">
-          <div class="item"><span>Entry Target</span><b>${fmt(R.price)}</b></div>
+          <div class="item"><span>Entry Price</span><b>${fmt(R.price)}</b></div>
           <div class="item"><span>RSI (14)</span><b>${R.rsi.toFixed(1)}</b></div>
-          <div class="item"><span>Stop Loss (1.6x ATR)</span><b class="down">${R.sl ? fmt(R.sl) : "-"}</b></div>
-          <div class="item"><span>Take Profit (2:1 RR)</span><b class="up">${R.tp ? fmt(R.tp) : "-"}</b></div>
+          <div class="item"><span>Stop Loss</span><b class="down">${R.sl ? fmt(R.sl) : "-"}</b></div>
+          <div class="item"><span>Target (TP)</span><b class="up">${R.tp ? fmt(R.tp) : "-"}</b></div>
         </div>
         <ul>${R.why.map(w => `<li>${w}</li>`).join("")}</ul>
+        ${R.strat ? renderStrat(R.strat) : ""}
+        ${bt ? `<div class="sub" style="margin-top:8px;border-top:1px solid var(--line);padding-top:6px">
+          <b>Backtest (140 candles):</b> ${bt.trades} trades · Win Rate <b>${bt.win.toFixed(0)}%</b> · Profit Factor <b>${bt.pf.toFixed(2)}</b></div>` : ""}
       </div>`;
 
-    $("smcBox").innerHTML = `
-      <div class="item"><span>Volume vs Avg:</span><b>${R.vr.toFixed(2)}x</b></div>
-      <div class="sub" style="margin-top:6px">Algorithmic filter active: Chop detection and fake breakout filters applied.</div>`;
-
-    renderOB(); renderMarket();
+    renderSMC(R); renderOB(); renderMarket(); updateSize(); drawChart();
   } catch(e) {
-    $("result").innerHTML = `<div class="card" style="color:var(--red)">Failed: ${e.message}</div>`;
+    $("result").innerHTML = `<div class="card err">Error: ${e.message}</div>`;
   } finally {
-    if (my === reqId) { btn.disabled = false; btn.textContent = "Recalculate Signal"; }
+    if (my === reqId) { btn.disabled = false; btn.textContent = "Get Signal"; }
   }
+}
+
+function renderStrat(s) {
+  return `
+    <div style="margin-top:10px;border-top:1px solid var(--line);padding-top:8px">
+      <h2>Strategy Checklist (${s.dir})</h2>
+      ${s.items.map(x => `<div class="chk-item ${x.ok ? "ok" : ""}">${x.ok ? "✅" : "⚪"} <span>${x.txt}</span></div>`).join("")}
+      <div class="grid" style="margin-top:6px">
+        <div class="item"><span>Limit Entry</span><b>${fmt(s.entry)}</b></div>
+        <div class="item"><span>Risk/Reward</span><b>${s.rr.toFixed(1)} : 1</b></div>
+      </div>
+    </div>`;
+}
+
+function renderSMC(R) {
+  const st = R.struct, lastEv = st.evs[st.evs.length - 1];
+  const evHtml = st.evs.slice(-4).reverse().map(e =>
+    `<span class="ev ${e.type === "CHoCH" ? "c" : e.dir === 1 ? "u" : "d"}">${e.type}${e.dir === 1 ? "↑" : "↓"} ${fmt(e.p)}</span>`).join("");
+  $("smcBox").innerHTML = `
+    <div class="grid" style="margin-bottom:8px">
+      <div class="item"><span>Structure</span><b class="${st.trend === 1 ? "up" : "down"}">${st.trend === 1 ? "Bullish 🐂" : "Bearish 🐻"}</b></div>
+      <div class="item"><span>Last Break</span><b>${lastEv ? `${lastEv.type} @${fmt(lastEv.p)}` : "-"}</b></div>
+      <div class="item"><span>Zone</span><b>${R.pd.zone} (${R.pd.pos.toFixed(0)}%)</b></div>
+      <div class="item"><span>Taker Flow</span><b>Buy ${(R.buyRatio*100).toFixed(0)}% / Sell ${(100-R.buyRatio*100).toFixed(0)}%</b></div>
+    </div>
+    <div>${evHtml || '<span class="sub">No recent BOS/CHoCH</span>'}</div>`;
 }
 
 function renderOB() {
@@ -435,12 +656,48 @@ function renderOB() {
       <div><span class="pill ${b.type === "bull" ? "LONG" : "SHORT"}">${b.type.toUpperCase()} OB</span></div>
     </div>
   `).join("");
-  $("obBox").innerHTML = out || '<div class="sub">No unmitigated order blocks in current zone.</div>';
+  $("obBox").innerHTML = out || '<div class="sub">No unmitigated Order Blocks nearby.</div>';
+}
+
+/* Whales & Liquidations */
+function whaleThr() { return Math.min(150000, Math.max(25000, ((prices[sel] && prices[sel].q) || 0) * 0.00005)); }
+function renderWhales() {
+  const cut = Date.now() - 15 * 60 * 1000;
+  let b = 0, s = 0;
+  whales.forEach(w => { if (w.t > cut) { if (w.side === "BUY") b += w.usd; else s += w.usd; } });
+  $("whaleSum").innerHTML = `Last 15m (> $${money(whaleThr())}): <b class="up">Buy $${money(b)}</b> vs <b class="down">Sell $${money(s)}</b>`;
+  $("whaleFeed").innerHTML = whales.slice(0, 30).map(w =>
+    `<tr class="${w.usd >= 500000 ? "big" : ""}"><td>${tstr(w.t)}</td>
+     <td class="${w.side === "BUY" ? "up" : "down"}" style="font-weight:700">${w.side}</td>
+     <td>${fmt(w.price)}</td><td>${w.usd >= 250000 ? "🐋 " : ""}$${money(w.usd)}</td></tr>`
+  ).join("") || '<tr><td colspan="4" class="sub">Whale orders waiting...</td></tr>';
+}
+function addLiq(x) { liqs.unshift(x); if (liqs.length > 80) liqs.pop(); renderLiq(); }
+function renderLiq() {
+  const cut = Date.now() - 3600000, only = $("liqSel").checked, base = sel.replace("USDT","");
+  let lu = 0, su = 0;
+  liqs.forEach(x => { if (x.t > cut) { if (x.side === "LONG") lu += x.usd; else su += x.usd; } });
+  $("liqTot").innerHTML = `
+    <div class="item"><span>Longs Rekt (1h)</span><b class="down">$${money(lu)}</b></div>
+    <div class="item"><span>Shorts Rekt (1h)</span><b class="up">$${money(su)}</b></div>`;
+  const list = (only ? liqs.filter(x => x.coin === base) : liqs).slice(0, 40);
+  $("liqFeed").innerHTML = list.map(x =>
+    `<tr><td>${tstr(x.t)}</td><td class="ex">${x.ex}</td><td>${x.coin}</td>
+     <td><span class="pill ${x.side === "LONG" ? "SHORT" : "LONG"}">${x.side} REKT</span></td>
+     <td>${fmt(x.price)}</td><td>$${money(x.usd)}</td></tr>`
+  ).join("") || '<tr><td colspan="6" class="sub">No liquidations yet...</td></tr>';
+}
+
+function updateSize() {
+  const out = $("sizeOut");
+  if (!lastSig) { out.textContent = "Calculate an active signal to determine size."; return; }
+  const eq = +$("equity").value, rp = +$("riskPct").value;
+  const riskAmt = eq * rp / 100, dist = Math.abs(lastSig.price - lastSig.sl);
+  out.innerHTML = `Risk: <b>${riskAmt.toFixed(2)} USDT</b> · Pos Size: <b>${(riskAmt / dist).toFixed(4)}</b> units`;
 }
 
 function renderMarket() {
-  const tb = $("mkt");
-  const q = $("search").value.trim().toUpperCase(), mf = $("mfilter").value;
+  const tb = $("mkt"), q = $("search").value.trim().toUpperCase(), mf = $("mfilter").value;
   let list = coins.map((c, i) => ({ ...c, rank: i+1, pr: prices[c.symbol], R: results[c.symbol] }));
   if (q) list = list.filter(x => x.symbol.includes(q));
   if (mf === "sig") list = list.filter(x => x.R && x.R.side !== "WAIT");
@@ -453,63 +710,137 @@ function renderMarket() {
       <td>${x.pr ? fmt(x.pr.p) : "-"}</td>
       <td class="${x.pr && x.pr.p >= x.pr.o ? "up" : "down"}">${x.pr ? ((x.pr.p - x.pr.o)/x.pr.o*100).toFixed(2)+"%" : "-"}</td>
       <td>${x.R ? `<span class="pill ${x.R.side}">${x.R.side}</span>` : "—"}</td>
-      <td>${x.R && x.R.side !== "WAIT" ? x.R.score+"/10" : "—"}</td>
+      <td>${x.R && x.R.side !== "WAIT" ? x.R.score+"/9" : "—"}</td>
       <td>${x.pr ? money(x.pr.q) : "-"}</td>
     </tr>
-  `).join("") || '<tr><td colspan="7" class="sub">No matching coins found.</td></tr>';
+  `).join("") || '<tr><td colspan="7" class="sub">No matching coins.</td></tr>';
 }
 
-/* Initialization */
-async function init() {
-  try {
-    const res = await fetch(`${REST}/fapi/v1/ticker/24hr`);
-    const data = await res.json();
-    const rows = data.filter(d => d.symbol.endsWith("USDT")).sort((a,b) => +b.quoteVolume - +a.quoteVolume).slice(0, 150);
-    coins = rows.map(r => ({ symbol: r.symbol }));
-    rows.forEach(r => { prices[r.symbol] = { p: +r.lastPrice, o: +r.openPrice, q: +r.quoteVolume }; });
-
-    $("symbol").innerHTML = coins.map(c => `<option value="${c.symbol}">${c.symbol}</option>`).join("");
-    renderMarket();
-    getSignal();
-
-    // Global Price WebSocket
-    wsMini = new WebSocket(WSB + "!miniTicker@arr");
-    wsMini.onopen = () => $("dPrice").classList.add("on");
-    wsMini.onmessage = ev => {
-      JSON.parse(ev.data).forEach(t => {
-        if (prices[t.s]) {
-          prices[t.s].p = +t.c;
-          prices[t.s].o = +t.o;
-          prices[t.s].q = +t.q;
-        }
-      });
-      if (prices[sel]) {
-        const x = prices[sel];
-        const ch = (x.p - x.o) / x.o * 100;
-        $("live").innerHTML = `
-          <div class="sub">${sel} · Live Ticker</div>
-          <div class="price ${ch >= 0 ? "up" : "down"}">${fmt(x.p)}</div>
-          <div class="${ch >= 0 ? "up" : "down"}">${ch >= 0 ? "+" : ""}${ch.toFixed(2)}% (24h)</div>`;
-      }
-    };
-  } catch(e) {
-    $("ohlc").textContent = "Init Error: " + e.message;
+/* Scanner */
+async function runScan() {
+  const my = ++scanId, opts = { strict: $("strict").checked, obOnly: $("obOnly").checked };
+  const queue = coins.slice(0, 150).map(c => c.symbol);
+  $("scanBtn").disabled = true;
+  for (let s of queue) {
+    if (my !== scanId) break;
+    try {
+      const k = await fetchKlines(s, activeTf);
+      kCache[key(s, activeTf)] = k;
+      results[s] = analyze(k, opts);
+      $("scanInfo").textContent = `Scanning: ${s}...`;
+      await sleep(50);
+    } catch(e){}
   }
+  $("scanBtn").disabled = false;
+  $("scanInfo").textContent = `Scan complete for ${activeTf}!`;
+  renderMarket();
 }
 
-$("symbol").onchange = () => { sel = $("symbol").value; getSignal(); };
-$("tf").onchange = () => getSignal();
-$("go").onclick = () => getSignal();
+/* WebSockets */
+function connectAllFeeds() {
+  const ws = new WebSocket(WSB + "!miniTicker@arr");
+  ws.onopen = () => $("dPrice").classList.add("on");
+  ws.onmessage = ev => {
+    JSON.parse(ev.data).forEach(t => {
+      if (prices[t.s]) { prices[t.s].p = +t.c; prices[t.s].o = +t.o; prices[t.s].q = +t.q; }
+    });
+    if (prices[sel]) {
+      const x = prices[sel], ch = (x.p - x.o) / x.o * 100;
+      $("live").innerHTML = `
+        <div class="sub">${sel} · Live Ticker</div>
+        <div class="price ${ch >= 0 ? "up" : "down"}">${fmt(x.p)}</div>
+        <div class="${ch >= 0 ? "up" : "down"}" style="font-weight:700">${ch >= 0 ? "+" : ""}${ch.toFixed(2)}% (24h)</div>`;
+    }
+  };
+
+  const wsLiq = new WebSocket(WSB + "!forceOrder@arr");
+  wsLiq.onopen = () => $("dLiq").classList.add("on");
+  wsLiq.onmessage = ev => {
+    const o = JSON.parse(ev.data).o, px = +o.ap || +o.p;
+    addLiq({ t: o.T, ex: "BINANCE", coin: o.s.replace("USDT",""), side: o.S === "SELL" ? "LONG" : "SHORT", price: px, usd: px * +o.q });
+  };
+
+  const wsBy = new WebSocket("wss://api.bybit.com/v5/public/linear");
+  wsBy.onopen = () => {
+    $("dBybit").classList.add("on");
+    bybitSyms.forEach(s => wsBy.send(JSON.stringify({ op: "subscribe", args: ["liquidation." + s] })));
+    setInterval(() => { if (wsBy.readyState === 1) wsBy.send(JSON.stringify({ op: "ping" })); }, 20000);
+  };
+  wsBy.onmessage = ev => {
+    const m = JSON.parse(ev.data);
+    if (m.topic && m.topic.startsWith("liquidation") && m.data) {
+      const d = m.data;
+      addLiq({ t: +d.T, ex: "BYBIT", coin: d.s.replace("USDT",""), side: d.S === "Sell" ? "LONG" : "SHORT", price: +d.p, usd: +d.p * +d.v });
+    }
+  };
+
+  const wsOk = new WebSocket("wss://ws.okx.com:8443/ws/v5/public");
+  wsOk.onopen = () => {
+    $("dOkx").classList.add("on");
+    wsOk.send(JSON.stringify({ op: "subscribe", args: [{ channel: "liquidation-orders", instType: "SWAP" }] }));
+    setInterval(() => { if (wsOk.readyState === 1) wsOk.send("ping"); }, 25000);
+  };
+  wsOk.onmessage = ev => {
+    const m = JSON.parse(ev.data);
+    if (m.data) m.data.forEach(d => {
+      (d.details || []).forEach(dt => {
+        const px = +dt.bkPx, usd = px * +dt.sz;
+        if (usd > 0) addLiq({ t: +dt.ts, ex: "OKX", coin: d.instId.split("-")[0], side: dt.side === "sell" ? "LONG" : "SHORT", price: px, usd });
+      });
+    });
+  };
+}
+
+function connectWhales() {
+  if (wsAgg) try { wsAgg.close(); } catch(e){}
+  wsAgg = new WebSocket(WSB + sel.toLowerCase() + "@aggTrade");
+  wsAgg.onmessage = ev => {
+    const d = JSON.parse(ev.data), usd = +d.p * +d.q;
+    if (usd >= whaleThr()) {
+      whales.unshift({ t: d.T, side: d.m ? "SELL" : "BUY", price: +d.p, usd });
+      if (whales.length > 50) whales.pop();
+      renderWhales();
+    }
+  };
+}
+
+/* UI Events */
+$("tfBar").addEventListener("click", e => {
+  if (!e.target.classList.contains("tf-btn")) return;
+  document.querySelectorAll(".tf-btn").forEach(b => b.classList.remove("active"));
+  e.target.classList.add("active");
+  activeTf = e.target.dataset.tf;
+  loadData();
+});
+$("symbol").onchange = () => { sel = $("symbol").value; whales = []; connectWhales(); loadData(); };
+$("go").onclick = () => loadData();
+$("scanBtn").onclick = runScan;
 $("search").oninput = renderMarket;
 $("mfilter").onchange = renderMarket;
-$("strict").onchange = () => getSignal();
-$("obOnly").onchange = () => getSignal();
+$("strict").onchange = () => loadData();
+$("obOnly").onchange = () => loadData();
+$("liqSel").onchange = renderLiq;
+$("equity").oninput = updateSize;
+$("riskPct").oninput = updateSize;
 $("mkt").onclick = e => {
   const tr = e.target.closest("tr[data-s]");
-  if (tr) { sel = tr.dataset.s; $("symbol").value = sel; getSignal(); window.scrollTo({ top: 0, behavior: "smooth" }); }
+  if (tr) { sel = tr.dataset.s; $("symbol").value = sel; whales = []; connectWhales(); loadData(); window.scrollTo({ top: 0, behavior: "smooth" }); }
 };
 
-window.onresize = () => drawChart();
+window.onresize = drawChart;
+
+async function init() {
+  const r = await fetch(`${REST}/fapi/v1/ticker/24hr`);
+  const data = await r.json();
+  const rows = data.filter(d => d.symbol.endsWith("USDT")).sort((a,b) => +b.quoteVolume - +a.quoteVolume).slice(0, 150);
+  coins = rows.map(x => ({ symbol: x.symbol }));
+  rows.forEach(r => { prices[r.symbol] = { p: +r.lastPrice, o: +r.openPrice, q: +r.quoteVolume }; });
+  bybitSyms = coins.slice(0, 20).map(c => c.symbol);
+
+  $("symbol").innerHTML = coins.map(c => `<option value="${c.symbol}">${c.symbol}</option>`).join("");
+  connectAllFeeds(); connectWhales();
+  loadData();
+}
 init();
 </script>
 </body>
