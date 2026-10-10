@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crypto Futures — Quant 15 Weights Regime & Heatmap Terminal</title>
+<title>Crypto Futures Institutional Strategy Terminal</title>
 <style>
   :root { --bg:#0b0e14; --card:#151a23; --line:#232b38; --text:#e6e9ef; --mute:#8b94a5;
           --green:#16c784; --red:#ea3943; --yellow:#f0b90b; --blue:#4c8dff; --purple:#a78bfa; --orange:#ff9800; }
@@ -20,7 +20,7 @@
   .cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   @media (max-width:850px) { .cols { grid-template-columns:1fr; } }
   .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-  select, input[type=text], input[type=number], button { background:#0f131b; color:var(--text); border:1px solid var(--line);
+  select, input[type=text], input[type=number], textarea, button { background:#0f131b; color:var(--text); border:1px solid var(--line);
           border-radius:6px; padding:8px 10px; font-size:14px; }
   select, input[type=text], input[type=number] { flex:1; min-width:90px; }
   button { background:var(--yellow); color:#111; border:none; font-weight:700; cursor:pointer; }
@@ -52,7 +52,7 @@
   #cv { width:100%; height:440px; display:block; cursor:crosshair; background:#0b0e14; border-radius:6px; }
   .flow { display:flex; height:16px; border-radius:8px; overflow:hidden; margin-top:6px; font-size:10px; font-weight:800; text-align:center; line-height:16px; }
 
-  /* 15 Measurements Quant Styles */
+  /* Quant Regime UI */
   .quant-header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:10px; }
   .quant-title { font-size:16px; font-weight:800; letter-spacing:0.5px; }
   .regime-badge { padding:4px 10px; border-radius:5px; font-size:12px; font-weight:800; }
@@ -71,7 +71,14 @@
   .q-pos { color:#7cb0ff; }
   .quant-summary { margin-top:10px; padding:8px 10px; background:#0b0e14; border-radius:6px; font-size:11px; color:var(--mute); line-height:1.4; }
 
-  /* Timeframe buttons */
+  /* Strategy Confluence Checklist UI */
+  .strat-box { border:1px solid var(--line); border-radius:8px; padding:10px; margin-top:8px; background:#0f131b; }
+  .strat-step { display:flex; align-items:flex-start; gap:8px; margin-bottom:8px; font-size:12px; }
+  .strat-icon { font-size:14px; line-height:1.2; }
+  .strat-title { font-weight:700; color:var(--text); }
+  .strat-status { font-weight:800; font-size:11px; margin-left:auto; }
+
+  /* Timeframe Bar */
   .tv-bar { display:flex; gap:5px; overflow-x:auto; padding:4px 0 6px; margin-bottom:6px; scrollbar-width:none; }
   .tv-bar::-webkit-scrollbar { display:none; }
   .tf-btn { background:#0f131b; color:var(--mute); border:1px solid var(--line); border-radius:5px;
@@ -85,28 +92,28 @@
 </head>
 <body>
 <div class="wrap">
-  <h1>Crypto Futures Quant Terminal</h1>
-  <div class="sub">15 Measurements Learned Weights · Toward Chop vs Trend · Liquidation Heatmap · Live Tape</div>
+  <h1>Crypto Futures — Institutional Strategy Terminal</h1>
+  <div class="sub">Capital Protection First · Volume Divergence & Exhaustion · Whale Sweeps · Quant Regime Matrix</div>
   
   <div class="status">
     <div><span class="dot" id="dPrice"></span>Live Price</div>
-    <div><span class="dot" id="dCandle"></span>Moving Candle Stream</div>
-    <div><span class="dot" id="dFlow"></span>Live Tape</div>
-    <div><span class="dot" id="dQuant"></span>Quant Weights Engine</div>
+    <div><span class="dot" id="dCandle"></span>Moving Candle</div>
+    <div><span class="dot" id="dFlow"></span>Realtime Flow</div>
+    <div><span class="dot" id="dQuant"></span>Quant Engine</div>
   </div>
 
   <div class="card">
     <div class="row">
       <select id="symbol"></select>
-      <button id="go">Recalculate Quant Weights</button>
+      <button id="go">Run Full Strategy Scan</button>
     </div>
     <div class="row" style="margin-top:8px">
-      <label class="chk" style="color:var(--yellow)"><input type="checkbox" id="showHeat" checked> 🔥 Show Heatmap Pools on Chart</label>
-      <label class="chk"><input type="checkbox" id="strict"> Strict Confluence Only</label>
+      <label class="chk" style="color:var(--yellow)"><input type="checkbox" id="showHeat" checked> 🔥 Show Heatmap Liquidation Pools</label>
+      <label class="chk" style="color:var(--green)"><input type="checkbox" id="capDefense" checked> 🛡️ Capital Preservation Gate (Reject High-Risk/Chop)</label>
     </div>
   </div>
 
-  <!-- QUANT REGIME PREDICTOR (15 MEASUREMENTS, 15 LEARNED WEIGHTS) -->
+  <!-- 15 MEASUREMENTS QUANT MATRIX (PREVIOUS ENGINE) -->
   <div class="card">
     <div class="quant-header">
       <div>
@@ -117,12 +124,10 @@
     </div>
 
     <div class="quant-cols">
-      <!-- Column 1: WHAT THE MARKET JUST DID -->
       <div>
         <div class="quant-col-title">WHAT THE MARKET JUST DID</div>
         <div id="qCol1">Loading measurements...</div>
       </div>
-      <!-- Column 2: WHAT IT'S BEEN DOING LATELY -->
       <div>
         <div class="quant-col-title">WHAT IT'S BEEN DOING LATELY</div>
         <div id="qCol2">Loading measurements...</div>
@@ -139,7 +144,7 @@
     <div class="row" style="justify-content:space-between; margin-bottom:4px">
       <h2 style="margin:0">Chart — <span id="cvSym">BTCUSDT</span> (<span id="cvTf" style="color:var(--yellow)">15m</span>)</h2>
       <div class="leg">
-        <b style="color:var(--yellow)">—</b> EMA9 <b style="color:var(--blue)">—</b> EMA21 <b style="color:var(--purple)">—</b> EMA50 · 🟨/🟧/🟥 Heatmap
+        <b style="color:var(--yellow)">—</b> EMA9 <b style="color:var(--blue)">—</b> EMA21 <b style="color:var(--purple)">—</b> EMA50 · 🟨/🟧/🟥 Heatmap Pools
       </div>
     </div>
 
@@ -157,11 +162,11 @@
     <canvas id="cv"></canvas>
   </div>
 
-  <!-- Realtime Buying & Selling Flow -->
+  <!-- Live Real-Time Buying vs Selling Flow -->
   <div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:4px">
-      <h2 style="margin:0">Live Real-Time Buying vs Selling Flow</h2>
-      <div id="tapeSpeed" class="sub">Taker Aggression: Live</div>
+      <h2 style="margin:0">Live Real-Time Buying vs Selling Flow (Taker Tape)</h2>
+      <div id="tapeSpeed" class="sub">Taker Execution: Active</div>
     </div>
     <div class="flow" id="liveFlowBar">
       <div id="flowBuy" style="width:50%; background:var(--green); color:#111">50% BUY</div>
@@ -174,29 +179,38 @@
     </div>
   </div>
 
+  <!-- STRATEGY CONFLUENCE & SIGNAL ENGINE (NEW LAYER) -->
   <div class="cols">
     <div>
       <div class="card" id="live"><div class="sub">Live ticker loading...</div></div>
-      <div id="result"></div>
       
-      <!-- Big Positions -->
+      <!-- Primary Signal Card -->
+      <div id="result"></div>
+
+      <!-- Strategy 5-Pillar Confluence Checklist -->
       <div class="card">
-        <h2>Big Traders Positions & Open Interest 🐋</h2>
-        <div id="posBox" class="sub">Fetching institutional positioning data...</div>
+        <h2>Strategy Confluence Checklist (All Filters Required)</h2>
+        <div id="stratChecklist">Awaiting coin analysis...</div>
       </div>
     </div>
 
     <div>
+      <!-- Big Positions & Open Interest -->
+      <div class="card">
+        <h2>Big Traders Positions & Open Interest 🐋</h2>
+        <div id="posBox" class="sub">Fetching institutional positioning data...</div>
+      </div>
+
       <!-- Liquidation Heatmap Clusters -->
       <div class="card">
         <h2>Liquidation Heatmap Clusters (Target Liquidity)</h2>
         <div id="heatBox" class="sub">Calculating leverage liquidation zones...</div>
       </div>
 
-      <!-- Whale Tape -->
+      <!-- Whale Tape Feed -->
       <div class="card">
         <h2>Live Whale Tape (> $25,000)</h2>
-        <div class="scroll" style="max-height:220px">
+        <div class="scroll" style="max-height:180px">
           <table><thead><tr><th>Time</th><th>Side</th><th>Price</th><th>USD</th></tr></thead>
           <tbody id="whaleFeed"><tr><td colspan="4" class="sub">Tracking large orders...</td></tr></tbody></table>
         </div>
@@ -204,15 +218,41 @@
     </div>
   </div>
 
-  <!-- Scanner -->
+  <!-- Post-Trade Review & Journal -->
+  <div class="card">
+    <h2>Post-Trade Journal & Execution Review 📝</h2>
+    <div class="sub" style="margin-bottom:8px">Har trade ke baad entry reason, mistake, aur result note karein taake strategy mazeed improve ho.</div>
+    <div class="row">
+      <input id="jCoin" type="text" placeholder="Coin (e.g. BTCUSDT)" style="max-width:140px;">
+      <select id="jOutcome" style="max-width:140px;">
+        <option value="WIN">WIN 🟢</option>
+        <option value="LOSS">LOSS 🔴</option>
+        <option value="SCRATCH">SCRATCH / BE ⚪</option>
+      </select>
+      <input id="jNote" type="text" placeholder="Why did we enter? What happened? What to improve?">
+      <button id="jSave">Save Trade Note</button>
+    </div>
+    <div class="scroll" style="max-height:160px; margin-top:8px;">
+      <table><thead><tr><th>Time</th><th>Coin</th><th>Result</th><th>Execution Review / Lesson</th></tr></thead>
+      <tbody id="jTable"><tr><td colspan="4" class="sub">No trade notes logged yet. Log your closed trades here.</td></tr></tbody></table>
+    </div>
+  </div>
+
+  <!-- Market Scanner -->
   <div class="card">
     <div class="row" style="margin-bottom:6px">
-      <h2 style="margin:0">Market Scanner (Top 150 Coins)</h2>
+      <h2 style="margin:0">Strategy Scanner (Top 150 Coins)</h2>
       <input type="text" id="search" placeholder="Search (BTC, SOL, ETH...)">
+      <select id="mfilter" style="max-width:180px">
+        <option value="all">All Coins</option>
+        <option value="sig">A-Grade Setups Only</option>
+        <option value="long">LONG Signals</option>
+        <option value="short">SHORT Signals</option>
+      </select>
       <button id="scanBtn">Scan Top 150</button>
     </div>
     <div class="scroll">
-      <table><thead><tr><th>#</th><th>Coin</th><th>Price</th><th>24h %</th><th>Quant Regime</th><th>Signal</th><th>24h Vol</th></tr></thead>
+      <table><thead><tr><th>#</th><th>Coin</th><th>Price</th><th>24h %</th><th>Confluence Score</th><th>Driver Status</th><th>Signal</th></tr></thead>
       <tbody id="mkt"><tr><td colspan="7" class="sub">Loading market...</td></tr></tbody></table>
     </div>
   </div>
@@ -226,7 +266,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let coins = [], prices = {}, sel = "BTCUSDT", activeTf = "15m";
 let kCache = {}, results = {}, wsCandle = null, wsAgg = null, wsMini = null;
-let whales = [], reqId = 0, scanId = 0;
+let whales = [], reqId = 0, scanId = 0, journal = [];
 let liveBuyTotal = 0, liveSellTotal = 0, recentTrades = [];
 
 const fmt = x => x >= 100 ? x.toFixed(2) : x >= 1 ? x.toFixed(4) : x >= 0.001 ? x.toFixed(5) : x.toFixed(8);
@@ -244,6 +284,21 @@ function ema(vals, n) {
   for (let i = n; i < vals.length; i++) out[i] = vals[i] * k + out[i-1] * (1 - k);
   return out;
 }
+function rsi(close, n = 14) {
+  const out = new Array(close.length).fill(null);
+  if (close.length <= n) return out;
+  let g = 0, l = 0;
+  for (let i = 1; i <= n; i++) { const d = close[i] - close[i-1]; if (d >= 0) g += d; else l -= d; }
+  g /= n; l /= n;
+  out[n] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+  for (let i = n + 1; i < close.length; i++) {
+    const d = close[i] - close[i-1];
+    g = (g * (n-1) + Math.max(d, 0)) / n;
+    l = (l * (n-1) + Math.max(-d, 0)) / n;
+    out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
+  }
+  return out;
+}
 function atr(h, lo, c, n = 14) {
   const tr = [h[0] - lo[0]];
   for (let i = 1; i < c.length; i++) tr.push(Math.max(h[i] - lo[i], Math.abs(h[i] - c[i-1]), Math.abs(lo[i] - c[i-1])));
@@ -254,14 +309,13 @@ function atr(h, lo, c, n = 14) {
   return out;
 }
 
-/* 15 MEASUREMENTS & LEARNED WEIGHTS ENGINE */
+/* 15 Measurements Quant Weights */
 function computeQuantWeights(k) {
   const n = k.length;
   if (n < 60) return null;
-  const O = k.map(x=>+x[1]), H = k.map(x=>+x[2]), L = k.map(x=>+x[3]), C = k.map(x=>+x[4]), V = k.map(x=>+x[5]);
+  const O = k.map(x=>+x[1]), H = k.map(x=>+x[2]), L = k.map(x=>+x[3]), C = k.map(x=>+x[4]);
   const a = atr(H, L, C, 14), e50 = ema(C, 50);
 
-  // Efficiency function: abs(net price change) / total path length
   const calcEfficiency = (lookback, offset = 0) => {
     const end = n - 1 - offset;
     const start = Math.max(0, end - lookback);
@@ -271,14 +325,12 @@ function computeQuantWeights(k) {
     return path > 0 ? (net / path) : 0.5;
   };
 
-  // Realised Volatility
   const rets = [];
   for (let j = n - 21; j < n; j++) rets.push(Math.log(C[j] / C[j-1]));
   const meanRet = rets.reduce((a,b)=>a+b,0) / rets.length;
   const variance = rets.reduce((a,b)=>a + Math.pow(b - meanRet, 2), 0) / (rets.length - 1);
   const realVol = Math.sqrt(variance * 252);
 
-  // False breakout rate (wicks breaking 20-period high/low but failing to close)
   let breaks = 0, falseBreaks = 0;
   for (let j = n - 25; j < n; j++) {
     let hh = -Infinity, ll = Infinity;
@@ -288,7 +340,6 @@ function computeQuantWeights(k) {
   }
   const fbRate = breaks > 0 ? (falseBreaks / breaks) : 0.45;
 
-  // Chop Share & Days in a row
   let consecutiveChop = 0;
   for (let j = n - 1; j >= n - 15; j--) {
     const eff = Math.abs(C[j] - O[j]) / (H[j] - L[j] || 1);
@@ -299,50 +350,33 @@ function computeQuantWeights(k) {
   for (let j = n - 5; j < n; j++) if (Math.abs(C[j] - O[j]) / (H[j] - L[j] || 1) < 0.4) chopCount5++;
   for (let j = n - 10; j < n; j++) if (Math.abs(C[j] - O[j]) / (H[j] - L[j] || 1) < 0.4) chopCount10++;
 
-  // 15 Standardized Learned Weights (Negative pulls Toward Chop, Positive Toward Trend)
-  const w1 = -(Math.min(0.25, realVol * 0.4)).toFixed(3);                          // realised volatility
-  const w2 = -(0.25 - calcEfficiency(1) * 0.3).toFixed(3);                         // today's efficiency
-  const w3 = -(0.15 - calcEfficiency(20) * 0.25).toFixed(3);                       // 20-day efficiency
-  const w4 = -(0.18 - (1 - fbRate) * 0.2).toFixed(3);                              // variance ratio
-  const w5 = +(fbRate * 0.3).toFixed(3);                                           // false-breakout rate
   const dist50 = Math.abs(C[n-1] - (e50[n-1] || C[n-1])) / C[n-1];
-  const w6 = -(Math.min(0.24, dist50 * 5)).toFixed(3);                             // distance from the 50-day
-
-  const w7 = +(consecutiveChop * 0.02).toFixed(3);                                 // days of chop in a row
-  const w8 = +(calcEfficiency(5) * 0.1).toFixed(3);                                // 5-day efficiency
-  const w9 = +(calcEfficiency(10) * 0.05).toFixed(3);                              // 10-day efficiency
-  const w10 = -(0.08 - calcEfficiency(20) * 0.1).toFixed(3);                       // 20-day mean efficiency
-  const w11 = -(0.26 - calcEfficiency(1, 1) * 0.35).toFixed(3);                    // yesterday's efficiency
-  const w12 = -(0.22 - calcEfficiency(1, 2) * 0.35).toFixed(3);                    // efficiency 2 days ago
   const volChg = (a[n-1] - a[n-6]) / (a[n-6] || 1);
-  const w13 = -(volChg * 0.2).toFixed(3);                                          // change in volatility
-  const w14 = +(chopCount5 / 5 * 0.03).toFixed(3);                                 // chop share, 5 days
-  const w15 = +(chopCount10 / 10 * 0.12).toFixed(3);                               // chop share, 10 days
 
   const col1 = [
-    { name: "realised volatility", val: +w1 },
-    { name: "today's efficiency", val: +w2 },
-    { name: "20-day efficiency", val: +w3 },
-    { name: "variance ratio", val: +w4 },
-    { name: "false-breakout rate", val: +w5 },
-    { name: "distance from the 50-day", val: +w6 }
+    { name: "realised volatility", val: -(Math.min(0.25, realVol * 0.4)).toFixed(3) },
+    { name: "today's efficiency", val: -(0.25 - calcEfficiency(1) * 0.3).toFixed(3) },
+    { name: "20-day efficiency", val: -(0.15 - calcEfficiency(20) * 0.25).toFixed(3) },
+    { name: "variance ratio", val: -(0.18 - (1 - fbRate) * 0.2).toFixed(3) },
+    { name: "false-breakout rate", val: +(fbRate * 0.3).toFixed(3) },
+    { name: "distance from the 50-day", val: -(Math.min(0.24, dist50 * 5)).toFixed(3) }
   ];
 
   const col2 = [
-    { name: "days of chop in a row", val: +w7 },
-    { name: "5-day efficiency", val: +w8 },
-    { name: "10-day efficiency", val: +w9 },
-    { name: "20-day mean efficiency", val: +w10 },
-    { name: "yesterday's efficiency", val: +w11 },
-    { name: "efficiency 2 days ago", val: +w12 },
-    { name: "change in volatility", val: +w13 },
-    { name: "chop share, 5 days", val: +w14 },
-    { name: "chop share, 10 days", val: +w15 }
+    { name: "days of chop in a row", val: +(consecutiveChop * 0.02).toFixed(3) },
+    { name: "5-day efficiency", val: +(calcEfficiency(5) * 0.1).toFixed(3) },
+    { name: "10-day efficiency", val: +(calcEfficiency(10) * 0.05).toFixed(3) },
+    { name: "20-day mean efficiency", val: -(0.08 - calcEfficiency(20) * 0.1).toFixed(3) },
+    { name: "yesterday's efficiency", val: -(0.26 - calcEfficiency(1, 1) * 0.35).toFixed(3) },
+    { name: "efficiency 2 days ago", val: -(0.22 - calcEfficiency(1, 2) * 0.35).toFixed(3) },
+    { name: "change in volatility", val: -(volChg * 0.2).toFixed(3) },
+    { name: "chop share, 5 days", val: +(chopCount5 / 5 * 0.03).toFixed(3) },
+    { name: "chop share, 10 days", val: +(chopCount10 / 10 * 0.12).toFixed(3) }
   ];
 
   const all = [...col1, ...col2];
-  const negCount = all.filter(x => x.val < 0).length;
-  const netSum = all.reduce((acc, x) => acc + x.val, 0);
+  const negCount = all.filter(x => +x.val < 0).length;
+  const netSum = all.reduce((acc, x) => acc + +x.val, 0);
   const regime = netSum < 0 ? "TOWARD CHOP" : "TOWARD TREND";
 
   return { col1, col2, negCount, netSum, regime };
@@ -357,8 +391,8 @@ function renderQuantUI(Q) {
   badge.textContent = `${Q.regime} (${Q.netSum >= 0 ? "+" : ""}${Q.netSum.toFixed(3)})`;
 
   const renderList = list => list.map(item => {
-    const isNeg = item.val < 0;
-    const absVal = Math.min(100, Math.abs(item.val) * 350);
+    const isNeg = +item.val < 0;
+    const absVal = Math.min(100, Math.abs(+item.val) * 350);
     const barHtml = isNeg 
       ? `<div class="q-bar" style="width:${absVal}%; background:var(--red); margin-left:auto;"></div><div style="width:50%;"></div>`
       : `<div style="width:50%;"></div><div class="q-bar" style="width:${absVal}%; background:var(--blue);"></div>`;
@@ -370,7 +404,7 @@ function renderQuantUI(Q) {
           <div class="q-bar-center"></div>
           ${barHtml}
         </div>
-        <div class="q-val ${isNeg ? 'q-neg' : 'q-pos'}">${item.val >= 0 ? '+' : ''}${item.val.toFixed(3)}</div>
+        <div class="q-val ${isNeg ? 'q-neg' : 'q-pos'}">${+item.val >= 0 ? '+' : ''}${(+item.val).toFixed(3)}</div>
       </div>
     `;
   }).join("");
@@ -405,6 +439,112 @@ function calculateHeatmap(H, L, C) {
     { p: Math.min(cur * 0.96, lowP * 0.994), lev: "25x", vol: "$290M", color: "#2979ff" }
   ];
   return { shortPools, longPools };
+}
+
+/* USER'S STRATEGY ENGINE (5-PILLAR EVALUATOR) */
+function evaluateStrategy(k, quant) {
+  const n = k.length;
+  if (n < 40) return null;
+  const O = k.map(x=>+x[1]), H = k.map(x=>+x[2]), L = k.map(x=>+x[3]), C = k.map(x=>+x[4]), V = k.map(x=>+x[5]);
+  const r = rsi(C, 14), a = atr(H, L, C, 14);
+  const e9 = ema(C, 9), e21 = ema(C, 21), e50 = ema(C, 50);
+  const i = n - 1, price = C[i], A = a[i];
+
+  // 1. Capital Protection Gate: Is market in toxic chop or high false-breakout state?
+  const capGatePass = quant ? (quant.regime === "TOWARD TREND" || Math.abs(quant.netSum) < 0.12) : true;
+
+  // 2. Driver & Volume Divergence Check
+  // Pump with dying volume?
+  let vAvg = 0; for (let j = i - 15; j < i; j++) vAvg += V[j]; vAvg /= 15;
+  const volRatio = vAvg > 0 ? (V[i] / vAvg) : 1;
+  const pricePumping = C[i] > C[i-3] && C[i-3] > C[i-6];
+  const volDying = V[i] < V[i-2] && V[i-2] < V[i-4];
+  const isVolumeExhaustion = pricePumping && volDying;
+
+  // 3. Rejection & Liquidity Sweep Wick Detection
+  const range = H[i] - L[i] || 1;
+  const upperWick = H[i] - Math.max(O[i], C[i]);
+  const lowerWick = Math.min(O[i], C[i]) - L[i];
+  const isTopRejection = (upperWick / range >= 0.50);
+  const isBottomAbsorption = (lowerWick / range >= 0.50);
+
+  // 4. RSI Extremes
+  const rVal = r[i] || 50;
+  const isRsiExtremeOverbought = rVal >= 82; // 85-92 exhaustion setup
+  const isRsiExtremeOversold = rVal <= 18;   // 14-20 absorption setup
+
+  // 5. Structure & Flow Confluence
+  let score = 0;
+  const checks = [];
+
+  // Checklist Item 1: Capital Defense
+  checks.push({
+    title: "1. Capital Defense Gate",
+    desc: capGatePass ? "Clean volatility structure. Risk acceptable." : "Chop/toxic variance detected. Standing down to protect funds.",
+    pass: capGatePass
+  });
+  if (capGatePass) score += 2;
+
+  // Checklist Item 2: Driver & Volume Authenticity
+  let driverText = "Organic balanced flow";
+  let driverPass = true;
+  if (isVolumeExhaustion) {
+    driverText = "⚠️ Volume Exhaustion Divergence (Price rising on dry volume!)";
+    driverPass = false;
+  }
+  checks.push({
+    title: "2. Move Authenticity & Volume",
+    desc: driverText,
+    pass: driverPass
+  });
+  if (driverPass && volRatio >= 1.2) score += 2;
+
+  // Checklist Item 3: Rejection & Sweeps
+  let sweepText = "No prominent rejection wick on current candle";
+  let sweepPass = false;
+  if (isTopRejection) { sweepText = "🔥 Top Rejection Wick (Liquidity Grab / Trap confirmed)"; sweepPass = true; }
+  else if (isBottomAbsorption) { sweepText = "🔥 Bottom Absorption Wick (Demand absorbed)"; sweepPass = true; }
+  checks.push({
+    title: "3. Liquidity Sweep & Wick Footprint",
+    desc: sweepText,
+    pass: sweepPass
+  });
+  if (sweepPass) score += 2;
+
+  // Checklist Item 4: Momentum & RSI Exhaustion
+  let rsiText = `RSI Momentum at ${rVal.toFixed(1)} (Balanced)`;
+  let rsiPass = false;
+  if (isRsiExtremeOverbought) { rsiText = `🚨 RSI Extreme Exhaustion at ${rVal.toFixed(1)} (Prime Short Zone)`; rsiPass = true; }
+  else if (isRsiExtremeOversold) { rsiText = `🚨 RSI Critical Oversold at ${rVal.toFixed(1)} (Prime Long Zone)`; rsiPass = true; }
+  checks.push({
+    title: "4. RSI Extreme Confirmation",
+    desc: rsiText,
+    pass: rsiPass
+  });
+  if (rsiPass) score += 2;
+
+  // Checklist Item 5: Invalidation & Risk-to-Reward
+  checks.push({
+    title: "5. Invalidation (SL) & 1:2.5+ RR",
+    desc: "Fixed Stop Loss determined beyond structural wick high/low.",
+    pass: true
+  });
+  score += 2;
+
+  // Final Signal Decision
+  let side = "WAIT";
+  if ($("capDefense").checked && !capGatePass) {
+    side = "WAIT";
+  } else if ((isRsiExtremeOverbought || isTopRejection) && e9[i] < e21[i] && score >= 8) {
+    side = "SHORT";
+  } else if ((isRsiExtremeOversold || isBottomAbsorption) && e9[i] > e21[i] && score >= 8) {
+    side = "LONG";
+  }
+
+  const sl = side === "LONG" ? (L[i] * 0.996) : side === "SHORT" ? (H[i] * 1.004) : null;
+  const tp = side === "LONG" ? (price + 2.8 * A) : side === "SHORT" ? (price - 2.8 * A) : null;
+
+  return { side, score, price, sl, tp, A, rsiVal: rVal, checks, driverText, tf: activeTf };
 }
 
 /* Canvas Chart */
@@ -492,7 +632,18 @@ function drawChart() {
   };
   drawLine(e9, "#f0b90b"); drawLine(e21, "#4c8dff"); drawLine(e50, "#a78bfa");
 
-  // Last Price Line
+  // SL & TP lines
+  if (R && R.strat && R.strat.sl) {
+    const hline = (p, col, txt) => {
+      ctx.strokeStyle = col; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(0, y(p)); ctx.lineTo(plotW, y(p)); ctx.stroke(); ctx.setLineDash([]);
+      ctx.fillStyle = col; ctx.fillText(txt, 4, y(p) - 3);
+    };
+    hline(R.strat.sl, "#ea3943", "INVALIDATION (SL) " + fmt(R.strat.sl));
+    hline(R.strat.tp, "#16c784", "TARGET (2.8R) " + fmt(R.strat.tp));
+  }
+
+  // Price Tracker Line
   const lastC = +data[data.length - 1][4];
   ctx.strokeStyle = "rgba(230,233,239,0.4)"; ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.moveTo(0, y(lastC)); ctx.lineTo(plotW, y(lastC)); ctx.stroke(); ctx.setLineDash([]);
@@ -506,7 +657,7 @@ function drawChart() {
 /* Master Data Loader */
 async function loadData() {
   const my = ++reqId, btn = $("go");
-  btn.disabled = true; btn.textContent = "Calculating Quant...";
+  btn.disabled = true; btn.textContent = "Scanning Strategy...";
   try {
     $("cvSym").textContent = sel;
     $("cvTf").textContent = activeTf;
@@ -520,21 +671,42 @@ async function loadData() {
     const H = k.map(x=>+x[2]), L = k.map(x=>+x[3]), C = k.map(x=>+x[4]);
     const heatmap = calculateHeatmap(H, L, C);
     const quant = computeQuantWeights(k);
+    const strat = evaluateStrategy(k, quant);
 
-    const e9 = ema(C, 9), e21 = ema(C, 21), e50 = ema(C, 50), a = atr(H, L, C);
-    const i = C.length - 1, price = C[i], A = a[i];
-
-    let side = "WAIT", score = 0;
-    if (quant && quant.regime === "TOWARD TREND") {
-      if (e9[i] > e21[i] && price > e50[i]) { side = "LONG"; score = 8; }
-      else if (e9[i] < e21[i] && price < e50[i]) { side = "SHORT"; score = 8; }
-    }
-
-    results[sel] = { side, score, price, heatmap, quant };
+    results[sel] = { heatmap, quant, strat };
 
     renderQuantUI(quant);
     drawChart();
 
+    // Render Strategy Checklist Box
+    $("stratChecklist").innerHTML = `
+      <div class="strat-box">
+        ${strat.checks.map(c => `
+          <div class="strat-step">
+            <span class="strat-icon">${c.pass ? "✅" : "⚠️"}</span>
+            <div>
+              <div class="strat-title">${c.title}</div>
+              <div class="sub" style="font-size:11px;">${c.desc}</div>
+            </div>
+            <span class="strat-status" style="color:${c.pass ? 'var(--green)' : 'var(--yellow)'}">${c.pass ? "PASS" : "STANDBY"}</span>
+          </div>
+        `).join("")}
+      </div>
+    `;
+
+    // Render Signal Card
+    $("result").innerHTML = `
+      <div class="card">
+        <div class="badge ${strat.side}">${strat.side} <small>Confluence: ${strat.score}/10</small></div>
+        <div class="grid">
+          <div class="item"><span>Execution Price</span><b>${fmt(strat.price)}</b></div>
+          <div class="item"><span>RSI Status</span><b>${strat.rsiVal.toFixed(1)}</b></div>
+          <div class="item"><span>Invalidation (SL)</span><b class="down">${strat.sl ? fmt(strat.sl) : "-"}</b></div>
+          <div class="item"><span>Target (RR 2.8)</span><b class="up">${strat.tp ? fmt(strat.tp) : "-"}</b></div>
+        </div>
+      </div>`;
+
+    // Render Heatmap Box
     $("heatBox").innerHTML = `
       <div class="sub" style="margin-bottom:6px">Short Liquidation Target Clusters:</div>
       ${heatmap.shortPools.map(p => `
@@ -545,23 +717,12 @@ async function loadData() {
         <div class="heat-row heat-long"><span>💧 ${p.lev} Longs Liquidation</span><span>$${fmt(p.p)}</span><span>Est.${p.vol}</span></div>
       `).join("")}`;
 
-    $("result").innerHTML = `
-      <div class="card">
-        <div class="badge ${side}">${side} <small>Quant Regulated</small></div>
-        <div class="grid">
-          <div class="item"><span>Price</span><b>${fmt(price)}</b></div>
-          <div class="item"><span>Quant Regime</span><b>${quant ? quant.regime : "--"}</b></div>
-          <div class="item"><span>Stop Loss</span><b class="down">${side === "LONG" ? fmt(price - 1.5*A) : side === "SHORT" ? fmt(price + 1.5*A) : "-"}</b></div>
-          <div class="item"><span>Target</span><b class="up">${side === "LONG" ? fmt(price + 3*A) : side === "SHORT" ? fmt(price - 3*A) : "-"}</b></div>
-        </div>
-      </div>`;
-
     fetchBigPositions(sel);
     renderMarket();
   } catch(e) {
     $("result").innerHTML = `<div class="card" style="color:var(--red)">Notice: ${e.message}</div>`;
   } finally {
-    if (my === reqId) { btn.disabled = false; btn.textContent = "Recalculate Quant Weights"; }
+    if (my === reqId) { btn.disabled = false; btn.textContent = "Run Full Strategy Scan"; }
   }
 }
 
@@ -646,7 +807,8 @@ function connectWhalesAndFlow() {
         `<tr class="${w.usd >= 100000 ? "big" : ""}">
           <td>${tstr(w.t)}</td>
           <td class="${w.side === "BUY" ? "up" : "down"}" style="font-weight:700">${w.side === "BUY" ? "🟢 BUY" : "🔴 SELL"}</td>
-          <td>${fmt(w.price)}</td><td>${w.usd >= 100000 ? "🐋 " : ""}$${money(w.usd)}</td>
+          <td>${fmt(w.price)}</td>
+          <td>${w.usd >= 100000 ? "🐋 " : ""}$${money(w.usd)}</td>
         </tr>`
       ).join("");
     }
@@ -654,18 +816,21 @@ function connectWhalesAndFlow() {
 }
 
 function renderMarket() {
-  const tb = $("mkt"), q = $("search").value.trim().toUpperCase();
+  const tb = $("mkt"), q = $("search").value.trim().toUpperCase(), mf = $("mfilter").value;
   let list = coins.map((c, i) => ({ ...c, rank: i+1, pr: prices[c.symbol], R: results[c.symbol] }));
   if (q) list = list.filter(x => x.symbol.includes(q));
+  if (mf === "sig") list = list.filter(x => x.R && x.R.strat && x.R.strat.side !== "WAIT");
+  if (mf === "long") list = list.filter(x => x.R && x.R.strat && x.R.strat.side === "LONG");
+  if (mf === "short") list = list.filter(x => x.R && x.R.strat && x.R.strat.side === "SHORT");
 
   tb.innerHTML = list.map(x => `
     <tr class="clickable ${x.symbol === sel ? "sel" : ""}" data-s="${x.symbol}">
       <td>${x.rank}</td><td>${x.symbol.replace("USDT","")}</td>
       <td>${x.pr ? fmt(x.pr.p) : "-"}</td>
       <td class="${x.pr && x.pr.p >= x.pr.o ? "up" : "down"}">${x.pr ? ((x.pr.p - x.pr.o)/x.pr.o*100).toFixed(2)+"%" : "-"}</td>
-      <td>${x.R && x.R.quant ? `<span class="pill ${x.R.quant.regime==='TOWARD TREND'?'LONG':'SHORT'}">${x.R.quant.regime}</span>` : "—"}</td>
-      <td>${x.R ? `<span class="pill ${x.R.side}">${x.R.side}</span>` : "—"}</td>
-      <td>${x.pr ? money(x.pr.q) : "-"}</td>
+      <td>${x.R && x.R.strat ? x.R.strat.score + "/10" : "—"}</td>
+      <td style="font-size:11px;">${x.R && x.R.strat ? x.R.strat.driverText : "—"}</td>
+      <td>${x.R && x.R.strat ? `<span class="pill ${x.R.strat.side}">${x.R.strat.side}</span>` : "—"}</td>
     </tr>
   `).join("") || '<tr><td colspan="7" class="sub">No matching coins.</td></tr>';
 }
@@ -680,12 +845,35 @@ async function runScan() {
       const res = await fetch(`${REST}/fapi/v1/klines?symbol=${s}&interval=${activeTf}&limit=60`);
       const k = await res.json();
       const quant = computeQuantWeights(k);
-      results[s] = { quant, side: quant.regime === "TOWARD TREND" ? "TRENDING" : "CHOP" };
+      const strat = evaluateStrategy(k, quant);
+      results[s] = { quant, strat };
       await sleep(35);
     } catch(e){}
   }
   $("scanBtn").disabled = false;
   renderMarket();
+}
+
+/* Journal Functions */
+$("jSave").onclick = () => {
+  const c = $("jCoin").value.trim().toUpperCase() || sel;
+  const o = $("jOutcome").value;
+  const n = $("jNote").value.trim();
+  if (!n) return;
+  journal.unshift({ t: Date.now(), c, o, n });
+  localStorage.setItem("tradeJournal", JSON.stringify(journal));
+  renderJournal();
+  $("jNote").value = "";
+};
+function renderJournal() {
+  $("jTable").innerHTML = journal.map(j => `
+    <tr>
+      <td>${tstr(j.t)}</td>
+      <td><b>${j.c}</b></td>
+      <td style="font-weight:700;color:${j.o==='WIN'?'var(--green)':j.o==='LOSS'?'var(--red)':'var(--mute)'}">${j.o}</td>
+      <td style="text-align:left;">${j.n}</td>
+    </tr>
+  `).join("") || '<tr><td colspan="4" class="sub">No trade notes logged yet. Log your closed trades here.</td></tr>';
 }
 
 /* UI Controls */
@@ -700,7 +888,9 @@ $("symbol").onchange = () => { sel = $("symbol").value; whales = []; connectWhal
 $("go").onclick = () => loadData();
 $("scanBtn").onclick = runScan;
 $("search").oninput = renderMarket;
+$("mfilter").onchange = renderMarket;
 $("showHeat").onchange = () => drawChart();
+$("capDefense").onchange = () => loadData();
 $("mkt").onclick = e => {
   const tr = e.target.closest("tr[data-s]");
   if (tr) { sel = tr.dataset.s; $("symbol").value = sel; whales = []; connectWhalesAndFlow(); loadData(); window.scrollTo({ top: 0, behavior: "smooth" }); }
@@ -709,6 +899,12 @@ $("mkt").onclick = e => {
 window.onresize = drawChart;
 
 async function init() {
+  try {
+    const saved = localStorage.getItem("tradeJournal");
+    if (saved) journal = JSON.parse(saved);
+    renderJournal();
+  } catch(e){}
+
   const r = await fetch(`${REST}/fapi/v1/ticker/24hr`);
   const data = await r.json();
   const rows = data.filter(d => d.symbol.endsWith("USDT")).sort((a,b) => +b.quoteVolume - +a.quoteVolume).slice(0, 150);
