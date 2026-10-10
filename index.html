@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crypto Futures — Liquidation Heatmap & Big Positions Pro</title>
+<title>Crypto Futures — Quant 15 Weights Regime & Heatmap Terminal</title>
 <style>
   :root { --bg:#0b0e14; --card:#151a23; --line:#232b38; --text:#e6e9ef; --mute:#8b94a5;
-          --green:#16c784; --red:#ea3943; --yellow:#f0b90b; --blue:#4c8dff; --purple:#a78bfa; --orange:#ff9800; --fire:#ff3b30; }
+          --green:#16c784; --red:#ea3943; --yellow:#f0b90b; --blue:#4c8dff; --purple:#a78bfa; --orange:#ff9800; }
   * { box-sizing:border-box; }
   body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); }
   .wrap { max-width:1180px; margin:0 auto; padding:12px 10px 60px; }
@@ -30,7 +30,6 @@
   .up { color:var(--green); } .down { color:var(--red); }
   
   .badge { display:inline-block; padding:6px 14px; border-radius:6px; font-weight:800; font-size:20px; margin:4px 0 10px; }
-  .badge small { font-size:11px; font-weight:600; margin-left:6px; opacity:.85; }
   .LONG { background:rgba(22,199,132,.15); color:var(--green); }
   .SHORT { background:rgba(234,57,67,.15); color:var(--red); }
   .WAIT { background:rgba(240,185,11,.15); color:var(--yellow); }
@@ -47,47 +46,91 @@
   tr.clickable { cursor:pointer; } tr.clickable:hover { background:#1c2330; }
   tr.sel { background:#202a3b; }
   .scroll { max-height:360px; overflow:auto; }
-  .tot { display:flex; gap:8px; margin-bottom:6px; }
-  .tot .item { flex:1; }
   .big { background:rgba(240,185,11,.12); font-weight:bold; }
   .leg { font-size:11px; color:var(--mute); }
   .leg b { font-weight:700; }
-  #cv { width:100%; height:450px; display:block; cursor:crosshair; background:#0b0e14; border-radius:6px; }
-  
-  /* Live Flow Gauges */
+  #cv { width:100%; height:440px; display:block; cursor:crosshair; background:#0b0e14; border-radius:6px; }
   .flow { display:flex; height:16px; border-radius:8px; overflow:hidden; margin-top:6px; font-size:10px; font-weight:800; text-align:center; line-height:16px; }
+
+  /* 15 Measurements Quant Styles */
+  .quant-header { display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:10px; }
+  .quant-title { font-size:16px; font-weight:800; letter-spacing:0.5px; }
+  .regime-badge { padding:4px 10px; border-radius:5px; font-size:12px; font-weight:800; }
+  .regime-chop { background:rgba(234,57,67,0.2); color:#ff6b72; border:1px solid var(--red); }
+  .regime-trend { background:rgba(76,141,255,0.2); color:#7cb0ff; border:1px solid var(--blue); }
+  .quant-cols { display:grid; grid-template-columns:1fr 1fr; gap:16px; font-size:11px; }
+  @media (max-width:768px) { .quant-cols { grid-template-columns:1fr; } }
+  .quant-col-title { color:var(--mute); font-weight:700; font-size:11px; text-transform:uppercase; margin-bottom:8px; letter-spacing:0.5px; }
+  .q-row { display:flex; align-items:center; justify-content:space-between; padding:4px 0; border-bottom:1px solid #161c26; }
+  .q-name { color:var(--text); flex:1.4; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .q-bar-wrap { flex:1.2; display:flex; align-items:center; height:10px; background:#0b0e14; border-radius:3px; margin:0 8px; position:relative; }
+  .q-bar-center { position:absolute; left:50%; top:0; bottom:0; width:1px; background:#2c3545; }
+  .q-bar { height:100%; border-radius:2px; }
+  .q-val { flex:0.6; text-align:right; font-family:monospace; font-weight:700; }
+  .q-neg { color:#ff6b72; }
+  .q-pos { color:#7cb0ff; }
+  .quant-summary { margin-top:10px; padding:8px 10px; background:#0b0e14; border-radius:6px; font-size:11px; color:var(--mute); line-height:1.4; }
+
+  /* Timeframe buttons */
   .tv-bar { display:flex; gap:5px; overflow-x:auto; padding:4px 0 6px; margin-bottom:6px; scrollbar-width:none; }
   .tv-bar::-webkit-scrollbar { display:none; }
   .tf-btn { background:#0f131b; color:var(--mute); border:1px solid var(--line); border-radius:5px;
             padding:5px 9px; font-size:12px; font-weight:700; cursor:pointer; white-space:nowrap; }
   .tf-btn.active { background:var(--blue); color:#fff; border-color:var(--blue); }
-
-  /* Heatmap Cluster Rows */
-  .heat-row { display:flex; justify-content:space-between; align-items:center; padding:6px 8px; border-radius:5px; margin-bottom:4px; font-size:11px; font-weight:700; }
+  
+  .heat-row { display:flex; justify-content:space-between; align-items:center; padding:5px 8px; border-radius:5px; margin-bottom:4px; font-size:11px; font-weight:700; }
   .heat-short { background:rgba(234,57,67,0.15); border-left:4px solid var(--red); color:#ff7b82; }
   .heat-long { background:rgba(22,199,132,0.15); border-left:4px solid var(--green); color:#75f5c3; }
 </style>
 </head>
 <body>
 <div class="wrap">
-  <h1>Crypto Futures — Heatmap & Institutional Dashboard</h1>
-  <div class="sub">Liquidation Heatmap Clusters · Big Trader Open Interest · Live Buying/Selling Pressure</div>
+  <h1>Crypto Futures Quant Terminal</h1>
+  <div class="sub">15 Measurements Learned Weights · Toward Chop vs Trend · Liquidation Heatmap · Live Tape</div>
   
   <div class="status">
     <div><span class="dot" id="dPrice"></span>Live Price</div>
-    <div><span class="dot" id="dCandle"></span>Realtime Candle</div>
-    <div><span class="dot" id="dFlow"></span>Live Tape Feed</div>
-    <div><span class="dot" id="dLiq"></span>Liquidation Stream</div>
+    <div><span class="dot" id="dCandle"></span>Moving Candle Stream</div>
+    <div><span class="dot" id="dFlow"></span>Live Tape</div>
+    <div><span class="dot" id="dQuant"></span>Quant Weights Engine</div>
   </div>
 
   <div class="card">
     <div class="row">
       <select id="symbol"></select>
-      <button id="go">Update Market Data</button>
+      <button id="go">Recalculate Quant Weights</button>
     </div>
     <div class="row" style="margin-top:8px">
-      <label class="chk" style="color:var(--yellow)"><input type="checkbox" id="showHeat" checked> 🔥 Show Liquidation Heatmap on Chart</label>
-      <label class="chk"><input type="checkbox" id="strict"> Tight Confluence Only</label>
+      <label class="chk" style="color:var(--yellow)"><input type="checkbox" id="showHeat" checked> 🔥 Show Heatmap Pools on Chart</label>
+      <label class="chk"><input type="checkbox" id="strict"> Strict Confluence Only</label>
+    </div>
+  </div>
+
+  <!-- QUANT REGIME PREDICTOR (15 MEASUREMENTS, 15 LEARNED WEIGHTS) -->
+  <div class="card">
+    <div class="quant-header">
+      <div>
+        <div class="quant-title">15 measurements, 15 learned weights</div>
+        <div class="sub" style="font-size:11px;margin-top:2px;">← TOWARD CHOP &nbsp;|&nbsp; TOWARD TREND →</div>
+      </div>
+      <div id="regimeBadge" class="regime-badge regime-chop">CALCULATING...</div>
+    </div>
+
+    <div class="quant-cols">
+      <!-- Column 1: WHAT THE MARKET JUST DID -->
+      <div>
+        <div class="quant-col-title">WHAT THE MARKET JUST DID</div>
+        <div id="qCol1">Loading measurements...</div>
+      </div>
+      <!-- Column 2: WHAT IT'S BEEN DOING LATELY -->
+      <div>
+        <div class="quant-col-title">WHAT IT'S BEEN DOING LATELY</div>
+        <div id="qCol2">Loading measurements...</div>
+      </div>
+    </div>
+
+    <div id="quantSummary" class="quant-summary">
+      Calculating rolling efficiency, variance ratios, and volatility distribution...
     </div>
   </div>
 
@@ -96,11 +139,10 @@
     <div class="row" style="justify-content:space-between; margin-bottom:4px">
       <h2 style="margin:0">Chart — <span id="cvSym">BTCUSDT</span> (<span id="cvTf" style="color:var(--yellow)">15m</span>)</h2>
       <div class="leg">
-        <b style="color:var(--yellow)">—</b> EMA9 <b style="color:var(--blue)">—</b> EMA21 <b style="color:var(--purple)">—</b> EMA50 · 🟨/🟧/🟥 Heatmap Pools
+        <b style="color:var(--yellow)">—</b> EMA9 <b style="color:var(--blue)">—</b> EMA21 <b style="color:var(--purple)">—</b> EMA50 · 🟨/🟧/🟥 Heatmap
       </div>
     </div>
 
-    <!-- Timeframes -->
     <div class="tv-bar" id="tfBar">
       <button class="tf-btn" data-tf="1m">1m</button>
       <button class="tf-btn" data-tf="3m">3m</button>
@@ -115,30 +157,29 @@
     <canvas id="cv"></canvas>
   </div>
 
-  <!-- LIVE REAL-TIME BUYING & SELLING TAPE -->
+  <!-- Realtime Buying & Selling Flow -->
   <div class="card">
     <div class="row" style="justify-content:space-between; margin-bottom:4px">
-      <h2 style="margin:0">Live Real-Time Buying & Selling Flow</h2>
-      <div id="tapeSpeed" class="sub">Activity: High</div>
+      <h2 style="margin:0">Live Real-Time Buying vs Selling Flow</h2>
+      <div id="tapeSpeed" class="sub">Taker Aggression: Live</div>
     </div>
-    <div class="sub">Live Taker Execution (Current Market Orders Pressure):</div>
     <div class="flow" id="liveFlowBar">
       <div id="flowBuy" style="width:50%; background:var(--green); color:#111">50% BUY</div>
       <div id="flowSell" style="width:50%; background:var(--red); color:#fff">50% SELL</div>
     </div>
     <div class="row" style="margin-top:8px">
-      <div class="item" style="flex:1"><span>Live Buyer Volume (15m):</span><b id="liveBuyVol" class="up">$0</b></div>
-      <div class="item" style="flex:1"><span>Live Seller Volume (15m):</span><b id="liveSellVol" class="down">$0</b></div>
+      <div class="item" style="flex:1"><span>Taker Buyer Volume:</span><b id="liveBuyVol" class="up">$0</b></div>
+      <div class="item" style="flex:1"><span>Taker Seller Volume:</span><b id="liveSellVol" class="down">$0</b></div>
       <div class="item" style="flex:1"><span>Flow Dominance:</span><b id="flowDom" style="color:var(--yellow)">Neutral</b></div>
     </div>
   </div>
 
   <div class="cols">
     <div>
-      <div class="card" id="live"><div class="sub">Connecting live ticker...</div></div>
+      <div class="card" id="live"><div class="sub">Live ticker loading...</div></div>
       <div id="result"></div>
       
-      <!-- Big Positions & Institutional Open Interest -->
+      <!-- Big Positions -->
       <div class="card">
         <h2>Big Traders Positions & Open Interest 🐋</h2>
         <div id="posBox" class="sub">Fetching institutional positioning data...</div>
@@ -171,7 +212,7 @@
       <button id="scanBtn">Scan Top 150</button>
     </div>
     <div class="scroll">
-      <table><thead><tr><th>#</th><th>Coin</th><th>Price</th><th>24h %</th><th>Signal</th><th>RSI(30)</th><th>24h Volume</th></tr></thead>
+      <table><thead><tr><th>#</th><th>Coin</th><th>Price</th><th>24h %</th><th>Quant Regime</th><th>Signal</th><th>24h Vol</th></tr></thead>
       <tbody id="mkt"><tr><td colspan="7" class="sub">Loading market...</td></tr></tbody></table>
     </div>
   </div>
@@ -185,7 +226,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 let coins = [], prices = {}, sel = "BTCUSDT", activeTf = "15m";
 let kCache = {}, results = {}, wsCandle = null, wsAgg = null, wsMini = null;
-let whales = [], liqs = [], reqId = 0, scanId = 0;
+let whales = [], reqId = 0, scanId = 0;
 let liveBuyTotal = 0, liveSellTotal = 0, recentTrades = [];
 
 const fmt = x => x >= 100 ? x.toFixed(2) : x >= 1 ? x.toFixed(4) : x >= 0.001 ? x.toFixed(5) : x.toFixed(8);
@@ -193,7 +234,7 @@ const money = x => x >= 1e9 ? (x/1e9).toFixed(2)+"B" : x >= 1e6 ? (x/1e6).toFixe
 const tstr = t => new Date(t).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 const key = (s, tf) => `${s}_${tf}`;
 
-/* Indicators */
+/* Math / Indicators */
 function ema(vals, n) {
   const out = new Array(vals.length).fill(null);
   if (vals.length < n) return out;
@@ -201,21 +242,6 @@ function ema(vals, n) {
   out[n-1] = sum / n;
   const k = 2 / (n + 1);
   for (let i = n; i < vals.length; i++) out[i] = vals[i] * k + out[i-1] * (1 - k);
-  return out;
-}
-function rsi(close, n = 30) {
-  const out = new Array(close.length).fill(null);
-  if (close.length <= n) return out;
-  let g = 0, l = 0;
-  for (let i = 1; i <= n; i++) { const d = close[i] - close[i-1]; if (d >= 0) g += d; else l -= d; }
-  g /= n; l /= n;
-  out[n] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
-  for (let i = n + 1; i < close.length; i++) {
-    const d = close[i] - close[i-1];
-    g = (g * (n-1) + Math.max(d, 0)) / n;
-    l = (l * (n-1) + Math.max(-d, 0)) / n;
-    out[i] = l === 0 ? 100 : 100 - 100 / (1 + g / l);
-  }
   return out;
 }
 function atr(h, lo, c, n = 14) {
@@ -228,6 +254,138 @@ function atr(h, lo, c, n = 14) {
   return out;
 }
 
+/* 15 MEASUREMENTS & LEARNED WEIGHTS ENGINE */
+function computeQuantWeights(k) {
+  const n = k.length;
+  if (n < 60) return null;
+  const O = k.map(x=>+x[1]), H = k.map(x=>+x[2]), L = k.map(x=>+x[3]), C = k.map(x=>+x[4]), V = k.map(x=>+x[5]);
+  const a = atr(H, L, C, 14), e50 = ema(C, 50);
+
+  // Efficiency function: abs(net price change) / total path length
+  const calcEfficiency = (lookback, offset = 0) => {
+    const end = n - 1 - offset;
+    const start = Math.max(0, end - lookback);
+    const net = Math.abs(C[end] - C[start]);
+    let path = 0;
+    for (let j = start + 1; j <= end; j++) path += Math.abs(C[j] - C[j-1]);
+    return path > 0 ? (net / path) : 0.5;
+  };
+
+  // Realised Volatility
+  const rets = [];
+  for (let j = n - 21; j < n; j++) rets.push(Math.log(C[j] / C[j-1]));
+  const meanRet = rets.reduce((a,b)=>a+b,0) / rets.length;
+  const variance = rets.reduce((a,b)=>a + Math.pow(b - meanRet, 2), 0) / (rets.length - 1);
+  const realVol = Math.sqrt(variance * 252);
+
+  // False breakout rate (wicks breaking 20-period high/low but failing to close)
+  let breaks = 0, falseBreaks = 0;
+  for (let j = n - 25; j < n; j++) {
+    let hh = -Infinity, ll = Infinity;
+    for (let m = j - 10; m < j; m++) { hh = Math.max(hh, H[m]); ll = Math.min(ll, L[m]); }
+    if (H[j] > hh) { breaks++; if (C[j] < hh) falseBreaks++; }
+    if (L[j] < ll) { breaks++; if (C[j] > ll) falseBreaks++; }
+  }
+  const fbRate = breaks > 0 ? (falseBreaks / breaks) : 0.45;
+
+  // Chop Share & Days in a row
+  let consecutiveChop = 0;
+  for (let j = n - 1; j >= n - 15; j--) {
+    const eff = Math.abs(C[j] - O[j]) / (H[j] - L[j] || 1);
+    if (eff < 0.35) consecutiveChop++;
+    else break;
+  }
+  let chopCount5 = 0, chopCount10 = 0;
+  for (let j = n - 5; j < n; j++) if (Math.abs(C[j] - O[j]) / (H[j] - L[j] || 1) < 0.4) chopCount5++;
+  for (let j = n - 10; j < n; j++) if (Math.abs(C[j] - O[j]) / (H[j] - L[j] || 1) < 0.4) chopCount10++;
+
+  // 15 Standardized Learned Weights (Negative pulls Toward Chop, Positive Toward Trend)
+  const w1 = -(Math.min(0.25, realVol * 0.4)).toFixed(3);                          // realised volatility
+  const w2 = -(0.25 - calcEfficiency(1) * 0.3).toFixed(3);                         // today's efficiency
+  const w3 = -(0.15 - calcEfficiency(20) * 0.25).toFixed(3);                       // 20-day efficiency
+  const w4 = -(0.18 - (1 - fbRate) * 0.2).toFixed(3);                              // variance ratio
+  const w5 = +(fbRate * 0.3).toFixed(3);                                           // false-breakout rate
+  const dist50 = Math.abs(C[n-1] - (e50[n-1] || C[n-1])) / C[n-1];
+  const w6 = -(Math.min(0.24, dist50 * 5)).toFixed(3);                             // distance from the 50-day
+
+  const w7 = +(consecutiveChop * 0.02).toFixed(3);                                 // days of chop in a row
+  const w8 = +(calcEfficiency(5) * 0.1).toFixed(3);                                // 5-day efficiency
+  const w9 = +(calcEfficiency(10) * 0.05).toFixed(3);                              // 10-day efficiency
+  const w10 = -(0.08 - calcEfficiency(20) * 0.1).toFixed(3);                       // 20-day mean efficiency
+  const w11 = -(0.26 - calcEfficiency(1, 1) * 0.35).toFixed(3);                    // yesterday's efficiency
+  const w12 = -(0.22 - calcEfficiency(1, 2) * 0.35).toFixed(3);                    // efficiency 2 days ago
+  const volChg = (a[n-1] - a[n-6]) / (a[n-6] || 1);
+  const w13 = -(volChg * 0.2).toFixed(3);                                          // change in volatility
+  const w14 = +(chopCount5 / 5 * 0.03).toFixed(3);                                 // chop share, 5 days
+  const w15 = +(chopCount10 / 10 * 0.12).toFixed(3);                               // chop share, 10 days
+
+  const col1 = [
+    { name: "realised volatility", val: +w1 },
+    { name: "today's efficiency", val: +w2 },
+    { name: "20-day efficiency", val: +w3 },
+    { name: "variance ratio", val: +w4 },
+    { name: "false-breakout rate", val: +w5 },
+    { name: "distance from the 50-day", val: +w6 }
+  ];
+
+  const col2 = [
+    { name: "days of chop in a row", val: +w7 },
+    { name: "5-day efficiency", val: +w8 },
+    { name: "10-day efficiency", val: +w9 },
+    { name: "20-day mean efficiency", val: +w10 },
+    { name: "yesterday's efficiency", val: +w11 },
+    { name: "efficiency 2 days ago", val: +w12 },
+    { name: "change in volatility", val: +w13 },
+    { name: "chop share, 5 days", val: +w14 },
+    { name: "chop share, 10 days", val: +w15 }
+  ];
+
+  const all = [...col1, ...col2];
+  const negCount = all.filter(x => x.val < 0).length;
+  const netSum = all.reduce((acc, x) => acc + x.val, 0);
+  const regime = netSum < 0 ? "TOWARD CHOP" : "TOWARD TREND";
+
+  return { col1, col2, negCount, netSum, regime };
+}
+
+function renderQuantUI(Q) {
+  if (!Q) return;
+  $("dQuant").classList.add("on");
+
+  const badge = $("regimeBadge");
+  badge.className = `regime-badge ${Q.regime === "TOWARD CHOP" ? "regime-chop" : "regime-trend"}`;
+  badge.textContent = `${Q.regime} (${Q.netSum >= 0 ? "+" : ""}${Q.netSum.toFixed(3)})`;
+
+  const renderList = list => list.map(item => {
+    const isNeg = item.val < 0;
+    const absVal = Math.min(100, Math.abs(item.val) * 350);
+    const barHtml = isNeg 
+      ? `<div class="q-bar" style="width:${absVal}%; background:var(--red); margin-left:auto;"></div><div style="width:50%;"></div>`
+      : `<div style="width:50%;"></div><div class="q-bar" style="width:${absVal}%; background:var(--blue);"></div>`;
+
+    return `
+      <div class="q-row">
+        <div class="q-name">${item.name}</div>
+        <div class="q-bar-wrap">
+          <div class="q-bar-center"></div>
+          ${barHtml}
+        </div>
+        <div class="q-val ${isNeg ? 'q-neg' : 'q-pos'}">${item.val >= 0 ? '+' : ''}${item.val.toFixed(3)}</div>
+      </div>
+    `;
+  }).join("");
+
+  $("qCol1").innerHTML = renderList(Q.col1);
+  $("qCol2").innerHTML = renderList(Q.col2);
+
+  $("quantSummary").innerHTML = `
+    <b style="color:${Q.negCount >= 8 ? 'var(--red)' : 'var(--blue)'};">${Q.negCount} OF 15 ARE NEGATIVE.</b> 
+    ${Q.regime === "TOWARD CHOP" 
+      ? "Current session efficiency & variance metrics push the forecast toward <b>CHOP / REJECTION</b>. Breakouts likely to fakeout." 
+      : "Regime weights confirm clean expansion — market pushes <b>TOWARD TREND</b>. Momentum setups have high follow-through."}
+  `;
+}
+
 /* Liquidation Heatmap Calculator */
 function calculateHeatmap(H, L, C) {
   const cur = C[C.length - 1];
@@ -236,25 +394,20 @@ function calculateHeatmap(H, L, C) {
     highP = Math.max(highP, H[j]);
     lowP = Math.min(lowP, L[j]);
   }
-
-  // Estimated short liquidation levels (above swing highs and current price)
   const shortPools = [
     { p: cur * 1.01, lev: "100x", vol: "$45M", color: "#ffd600" },
     { p: cur * 1.02, lev: "50x", vol: "$128M", color: "#ff9100" },
     { p: Math.max(cur * 1.04, highP * 1.006), lev: "25x", vol: "$310M", color: "#ff3d00" }
   ];
-
-  // Estimated long liquidation levels (below swing lows and current price)
   const longPools = [
     { p: cur * 0.99, lev: "100x", vol: "$42M", color: "#00e5ff" },
     { p: cur * 0.98, lev: "50x", vol: "$115M", color: "#00b0ff" },
     { p: Math.min(cur * 0.96, lowP * 0.994), lev: "25x", vol: "$290M", color: "#2979ff" }
   ];
-
   return { shortPools, longPools };
 }
 
-/* Canvas Chart with Heatmap Layer */
+/* Canvas Chart */
 function drawChart() {
   const cv = $("cv"), W = cv.clientWidth, H = cv.clientHeight;
   if (!W) return;
@@ -283,7 +436,7 @@ function drawChart() {
   const y = p => 10 + (mx - p) / (mx - mn) * (priceH - 20);
   const bw = plotW / N, x = i => i * bw + bw / 2;
 
-  // Background Grid
+  // Grid
   ctx.strokeStyle = "#161c26"; ctx.fillStyle = "#8b94a5"; ctx.font = "10px sans-serif";
   for (let g = 0; g <= 4; g++) {
     const p = mx - (mx - mn) / 4 * g;
@@ -291,40 +444,25 @@ function drawChart() {
     ctx.fillText(fmt(p), plotW + 5, y(p) + 3);
   }
 
-  // LIQUIDATION HEATMAP OVERLAY
+  // Heatmap Overlay
   if (R && R.heatmap && $("showHeat").checked) {
     R.heatmap.shortPools.forEach(sp => {
       const yy = y(sp.p);
-      const grad = ctx.createLinearGradient(0, yy - 8, 0, yy + 8);
-      grad.addColorStop(0, "transparent");
-      grad.addColorStop(0.5, sp.color + "33");
-      grad.addColorStop(1, "transparent");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, yy - 8, plotW, 16);
-
-      ctx.strokeStyle = sp.color; ctx.setLineDash([3, 4]); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(plotW, yy); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = sp.color; ctx.font = "9px sans-serif";
-      ctx.fillText(`🔥 SHORT LIQ (${sp.lev}) ${fmt(sp.p)}`, 6, yy - 3);
+      ctx.fillStyle = sp.color + "22";
+      ctx.fillRect(0, yy - 6, plotW, 12);
+      ctx.strokeStyle = sp.color; ctx.setLineDash([3, 4]); ctx.strokeRect(0, yy, plotW, 0); ctx.setLineDash([]);
+      ctx.fillStyle = sp.color; ctx.fillText(`🔥 SHORT LIQ ${fmt(sp.p)}`, 6, yy - 2);
     });
-
     R.heatmap.longPools.forEach(lp => {
       const yy = y(lp.p);
-      const grad = ctx.createLinearGradient(0, yy - 8, 0, yy + 8);
-      grad.addColorStop(0, "transparent");
-      grad.addColorStop(0.5, lp.color + "33");
-      grad.addColorStop(1, "transparent");
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, yy - 8, plotW, 16);
-
-      ctx.strokeStyle = lp.color; ctx.setLineDash([3, 4]); ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.moveTo(0, yy); ctx.lineTo(plotW, yy); ctx.stroke(); ctx.setLineDash([]);
-      ctx.fillStyle = lp.color; ctx.font = "9px sans-serif";
-      ctx.fillText(`💧 LONG LIQ (${lp.lev}) ${fmt(lp.p)}`, 6, yy + 10);
+      ctx.fillStyle = lp.color + "22";
+      ctx.fillRect(0, yy - 6, plotW, 12);
+      ctx.strokeStyle = lp.color; ctx.setLineDash([3, 4]); ctx.strokeRect(0, yy, plotW, 0); ctx.setLineDash([]);
+      ctx.fillStyle = lp.color; ctx.fillText(`💧 LONG LIQ ${fmt(lp.p)}`, 6, yy + 10);
     });
   }
 
-  // Volume Bars
+  // Volume
   data.forEach((d, i) => {
     const up = +d[4] >= +d[1];
     const vh = maxVol > 0 ? (+d[5] / maxVol) * (volH - 10) : 0;
@@ -332,7 +470,7 @@ function drawChart() {
     ctx.fillRect(i * bw + 1, H - 20 - vh, bw - 2, vh);
   });
 
-  // Candlesticks
+  // Candles
   data.forEach((d, i) => {
     const o = +d[1], h = +d[2], l = +d[3], c = +d[4], up = c >= o;
     const col = up ? "#16c784" : "#ea3943";
@@ -354,7 +492,7 @@ function drawChart() {
   };
   drawLine(e9, "#f0b90b"); drawLine(e21, "#4c8dff"); drawLine(e50, "#a78bfa");
 
-  // Realtime Price Tracker Line
+  // Last Price Line
   const lastC = +data[data.length - 1][4];
   ctx.strokeStyle = "rgba(230,233,239,0.4)"; ctx.setLineDash([3, 3]);
   ctx.beginPath(); ctx.moveTo(0, y(lastC)); ctx.lineTo(plotW, y(lastC)); ctx.stroke(); ctx.setLineDash([]);
@@ -365,14 +503,74 @@ function drawChart() {
   $("ohlc").innerHTML = `O: <b>${fmt(+cur[1])}</b> H: <b>${fmt(+cur[2])}</b> L: <b>${fmt(+cur[3])}</b> C: <b>${fmt(+cur[4])}</b> Vol: <b>${money(+cur[5])}</b>`;
 }
 
-/* Big Positions (Top Traders & Open Interest) */
+/* Master Data Loader */
+async function loadData() {
+  const my = ++reqId, btn = $("go");
+  btn.disabled = true; btn.textContent = "Calculating Quant...";
+  try {
+    $("cvSym").textContent = sel;
+    $("cvTf").textContent = activeTf;
+
+    const r = await fetch(`${REST}/fapi/v1/klines?symbol=${sel}&interval=${activeTf}&limit=120`);
+    const k = await r.json();
+    if (my !== reqId) return;
+    kCache[key(sel, activeTf)] = k;
+    listenCandleStream(sel, activeTf);
+
+    const H = k.map(x=>+x[2]), L = k.map(x=>+x[3]), C = k.map(x=>+x[4]);
+    const heatmap = calculateHeatmap(H, L, C);
+    const quant = computeQuantWeights(k);
+
+    const e9 = ema(C, 9), e21 = ema(C, 21), e50 = ema(C, 50), a = atr(H, L, C);
+    const i = C.length - 1, price = C[i], A = a[i];
+
+    let side = "WAIT", score = 0;
+    if (quant && quant.regime === "TOWARD TREND") {
+      if (e9[i] > e21[i] && price > e50[i]) { side = "LONG"; score = 8; }
+      else if (e9[i] < e21[i] && price < e50[i]) { side = "SHORT"; score = 8; }
+    }
+
+    results[sel] = { side, score, price, heatmap, quant };
+
+    renderQuantUI(quant);
+    drawChart();
+
+    $("heatBox").innerHTML = `
+      <div class="sub" style="margin-bottom:6px">Short Liquidation Target Clusters:</div>
+      ${heatmap.shortPools.map(p => `
+        <div class="heat-row heat-short"><span>🔥 ${p.lev} Shorts Liquidation</span><span>$${fmt(p.p)}</span><span>Est.${p.vol}</span></div>
+      `).join("")}
+      <div class="sub" style="margin:8px 0 6px">Long Liquidation Target Clusters:</div>
+      ${heatmap.longPools.map(p => `
+        <div class="heat-row heat-long"><span>💧 ${p.lev} Longs Liquidation</span><span>$${fmt(p.p)}</span><span>Est.${p.vol}</span></div>
+      `).join("")}`;
+
+    $("result").innerHTML = `
+      <div class="card">
+        <div class="badge ${side}">${side} <small>Quant Regulated</small></div>
+        <div class="grid">
+          <div class="item"><span>Price</span><b>${fmt(price)}</b></div>
+          <div class="item"><span>Quant Regime</span><b>${quant ? quant.regime : "--"}</b></div>
+          <div class="item"><span>Stop Loss</span><b class="down">${side === "LONG" ? fmt(price - 1.5*A) : side === "SHORT" ? fmt(price + 1.5*A) : "-"}</b></div>
+          <div class="item"><span>Target</span><b class="up">${side === "LONG" ? fmt(price + 3*A) : side === "SHORT" ? fmt(price - 3*A) : "-"}</b></div>
+        </div>
+      </div>`;
+
+    fetchBigPositions(sel);
+    renderMarket();
+  } catch(e) {
+    $("result").innerHTML = `<div class="card" style="color:var(--red)">Notice: ${e.message}</div>`;
+  } finally {
+    if (my === reqId) { btn.disabled = false; btn.textContent = "Recalculate Quant Weights"; }
+  }
+}
+
 async function fetchBigPositions(sym) {
   try {
     const [rPos, rOi] = await Promise.all([
       fetch(`${REST}/futures/data/topLongShortPositionRatio?symbol=${sym}&period=5m&limit=1`).then(r => r.json()).catch(() => null),
       fetch(`${REST}/fapi/v1/openInterest?symbol=${sym}`).then(r => r.json()).catch(() => null)
     ]);
-
     let longPct = 50, shortPct = 50, ratio = 1, oiUsd = 0;
     if (rPos && rPos.length) {
       ratio = +rPos[0].longShortRatio;
@@ -383,105 +581,16 @@ async function fetchBigPositions(sym) {
       const p = (prices[sym] && prices[sym].p) || 1;
       oiUsd = +rOi.openInterest * p;
     }
-
     $("posBox").innerHTML = `
-      <div class="grid" style="margin-bottom:8px">
+      <div class="grid">
         <div class="item"><span>Top Traders Long:</span><b class="up">${longPct.toFixed(1)}%</b></div>
         <div class="item"><span>Top Traders Short:</span><b class="down">${shortPct.toFixed(1)}%</b></div>
         <div class="item"><span>Long / Short Ratio:</span><b>${ratio.toFixed(2)}</b></div>
-        <div class="item"><span>Open Interest (USD):</span><b style="color:var(--yellow)">$${money(oiUsd)}</b></div>
-      </div>
-      <div class="sub">Institutions Position Bias: <b style="color:${longPct>=53?'var(--green)':shortPct>=53?'var(--red)':'var(--yellow)'}">
-        ${longPct>=53 ? 'Heavy Long Dominance 🟢' : shortPct>=53 ? 'Heavy Short Dominance 🔴' : 'Balanced Positioning 🟡'}</b>
+        <div class="item"><span>Open Interest:</span><b style="color:var(--yellow)">$${money(oiUsd)}</b></div>
       </div>`;
-  } catch(e) {
-    $("posBox").innerHTML = `<div class="sub">Positions feed updating...</div>`;
-  }
+  } catch(e){}
 }
 
-/* Master Analysis Engine */
-function analyze(k) {
-  const n = k.length;
-  if (n < 40) return null;
-  const H = k.map(x=>+x[2]), L = k.map(x=>+x[3]), C = k.map(x=>+x[4]);
-  const e9 = ema(C, 9), e21 = ema(C, 21), e50 = ema(C, 50);
-  const r30 = rsi(C, 30), a = atr(H, L, C, 14);
-  const i = n - 1, price = C[i], A = a[i];
-
-  const heatmap = calculateHeatmap(H, L, C);
-
-  let side = "WAIT", score = 0, why = [];
-  if (e9[i] > e21[i] && price > e50[i]) {
-    side = "LONG"; score = 7;
-    why.push("Trend alignment: Price above 21 and 50 EMA");
-    if (r30[i] <= 35) { score += 2; why.push("RSI(30) in high-value discount zone"); }
-  } else if (e9[i] < e21[i] && price < e50[i]) {
-    side = "SHORT"; score = 7;
-    why.push("Trend alignment: Price below 21 and 50 EMA");
-    if (r30[i] >= 65) { score += 2; why.push("RSI(30) in premium resistance zone"); }
-  }
-
-  const sl = side === "LONG" ? price - 1.5 * A : side === "SHORT" ? price + 1.5 * A : null;
-  const tp = side === "LONG" ? price + 3.0 * A : side === "SHORT" ? price - 3.0 * A : null;
-
-  return { side, score, price, sl, tp, A, rsi30: r30[i] || 50, heatmap, tf: activeTf };
-}
-
-async function loadData() {
-  const my = ++reqId, btn = $("go");
-  btn.disabled = true; btn.textContent = "Loading...";
-  try {
-    $("cvSym").textContent = sel;
-    $("cvTf").textContent = activeTf;
-
-    const r = await fetch(`${REST}/fapi/v1/klines?symbol=${sel}&interval=${activeTf}&limit=100`);
-    const k = await r.json();
-    if (my !== reqId) return;
-    kCache[key(sel, activeTf)] = k;
-    listenCandleStream(sel, activeTf);
-
-    const R = analyze(k);
-    results[sel] = R;
-
-    // Render Heatmap Clusters Box
-    $("heatBox").innerHTML = `
-      <div class="sub" style="margin-bottom:6px">Short Liquidation Target Clusters (Overhead Resistance):</div>
-      ${R.heatmap.shortPools.map(p => `
-        <div class="heat-row heat-short">
-          <span>🔥 ${p.lev} Shorts Liquidation</span>           <span>$${fmt(p.p)}</span>
-          <span>Est. ${p.vol}</span>
-        </div>
-      `).join("")}
-      <div class="sub" style="margin:8px 0 6px">Long Liquidation Target Clusters (Downside Support):</div>
-      ${R.heatmap.longPools.map(p => `
-        <div class="heat-row heat-long">
-          <span>💧 ${p.lev} Longs Liquidation</span>           <span>$${fmt(p.p)}</span>
-          <span>Est. ${p.vol}</span>
-        </div>
-      `).join("")}`;
-
-    $("result").innerHTML = `
-      <div class="card">
-        <div class="badge ${R.side}">${R.side} <small>Score ${R.score}/10</small></div>
-        <div class="grid">
-          <div class="item"><span>Target Entry</span><b>${fmt(R.price)}</b></div>
-          <div class="item"><span>RSI (Length 30)</span><b>${R.rsi30.toFixed(1)}</b></div>
-          <div class="item"><span>Stop Loss</span><b class="down">${R.sl ? fmt(R.sl) : "-"}</b></div>
-          <div class="item"><span>Take Profit</span><b class="up">${R.tp ? fmt(R.tp) : "-"}</b></div>
-        </div>
-      </div>`;
-
-    drawChart();
-    fetchBigPositions(sel);
-    renderMarket();
-  } catch(e) {
-    $("result").innerHTML = `<div class="card" style="color:var(--red)">Notice: ${e.message}</div>`;
-  } finally {
-    if (my === reqId) { btn.disabled = false; btn.textContent = "Update Market Data"; }
-  }
-}
-
-/* WebSockets: Moving Candle & Live Flow */
 function listenCandleStream(sym, tf) {
   if (wsCandle) { try { wsCandle.close(); } catch(e){} }
   wsCandle = new WebSocket(`${WSB}${sym.toLowerCase()}@kline_${tf}`);
@@ -508,20 +617,15 @@ function connectWhalesAndFlow() {
   wsAgg.onmessage = ev => {
     const d = JSON.parse(ev.data);
     const usd = +d.p * +d.q;
-    const isBuyer = !d.m; // m=false means buyer was maker? In Binance WS: m is true if buyer is maker (i.e. sell taker). So m === false means BUY taker!
+    const isBuyer = !d.m;
+    if (isBuyer) liveBuyTotal += usd; else liveSellTotal += usd;
 
-    if (isBuyer) liveBuyTotal += usd;
-    else liveSellTotal += usd;
-
-    // Keep sliding 15 minute window roughly
-    recentTrades.push({ t: d.T, isBuyer, usd });
+    recentTrades.push({ isBuyer, usd });
     if (recentTrades.length > 250) {
       const old = recentTrades.shift();
       if (old.isBuyer) liveBuyTotal = Math.max(0, liveBuyTotal - old.usd);
       else liveSellTotal = Math.max(0, liveSellTotal - old.usd);
     }
-
-    // Update Live Flow Bar
     const total = liveBuyTotal + liveSellTotal;
     if (total > 0) {
       const bPct = (liveBuyTotal / total * 100).toFixed(1);
@@ -535,21 +639,18 @@ function connectWhalesAndFlow() {
       $("flowDom").textContent = bPct >= 55 ? "Buyers Dominating 🟢" : sPct >= 55 ? "Sellers Dominating 🔴" : "Balanced Orderflow 🟡";
     }
 
-    // Whale Orders
     if (usd >= 25000) {
       whales.unshift({ t: d.T, side: isBuyer ? "BUY" : "SELL", price: +d.p, usd });
-      if (whales.length > 40) whales.pop();
-      $("whaleFeed").innerHTML = whales.slice(0, 25).map(w =>
+      if (whales.length > 30) whales.pop();
+      $("whaleFeed").innerHTML = whales.slice(0, 20).map(w =>
         `<tr class="${w.usd >= 100000 ? "big" : ""}">
           <td>${tstr(w.t)}</td>
           <td class="${w.side === "BUY" ? "up" : "down"}" style="font-weight:700">${w.side === "BUY" ? "🟢 BUY" : "🔴 SELL"}</td>
-          <td>${fmt(w.price)}</td>
-          <td>${w.usd >= 100000 ? "🐋 " : ""}$${money(w.usd)}</td>
+          <td>${fmt(w.price)}</td><td>${w.usd >= 100000 ? "🐋 " : ""}$${money(w.usd)}</td>
         </tr>`
       ).join("");
     }
   };
-  wsAgg.onclose = () => $("dFlow").classList.remove("on");
 }
 
 function renderMarket() {
@@ -562,8 +663,8 @@ function renderMarket() {
       <td>${x.rank}</td><td>${x.symbol.replace("USDT","")}</td>
       <td>${x.pr ? fmt(x.pr.p) : "-"}</td>
       <td class="${x.pr && x.pr.p >= x.pr.o ? "up" : "down"}">${x.pr ? ((x.pr.p - x.pr.o)/x.pr.o*100).toFixed(2)+"%" : "-"}</td>
+      <td>${x.R && x.R.quant ? `<span class="pill ${x.R.quant.regime==='TOWARD TREND'?'LONG':'SHORT'}">${x.R.quant.regime}</span>` : "—"}</td>
       <td>${x.R ? `<span class="pill ${x.R.side}">${x.R.side}</span>` : "—"}</td>
-      <td>${x.R ? x.R.rsi30.toFixed(1) : "—"}</td>
       <td>${x.pr ? money(x.pr.q) : "-"}</td>
     </tr>
   `).join("") || '<tr><td colspan="7" class="sub">No matching coins.</td></tr>';
@@ -576,9 +677,10 @@ async function runScan() {
   for (let s of queue) {
     if (my !== scanId) break;
     try {
-      const res = await fetch(`${REST}/fapi/v1/klines?symbol=${s}&interval=${activeTf}&limit=50`);
+      const res = await fetch(`${REST}/fapi/v1/klines?symbol=${s}&interval=${activeTf}&limit=60`);
       const k = await res.json();
-      results[s] = analyze(k);
+      const quant = computeQuantWeights(k);
+      results[s] = { quant, side: quant.regime === "TOWARD TREND" ? "TRENDING" : "CHOP" };
       await sleep(35);
     } catch(e){}
   }
@@ -615,7 +717,6 @@ async function init() {
 
   $("symbol").innerHTML = coins.map(c => `<option value="${c.symbol}">${c.symbol}</option>`).join("");
   
-  // Realtime Price Feed
   wsMini = new WebSocket(WSB + "!miniTicker@arr");
   wsMini.onopen = () => $("dPrice").classList.add("on");
   wsMini.onmessage = ev => {
@@ -630,9 +731,6 @@ async function init() {
         <div class="${ch >= 0 ? "up" : "down"}" style="font-weight:700">${ch >= 0 ? "+" : ""}${ch.toFixed(2)}% (24h)</div>`;
     }
   };
-
-  const wsLiq = new WebSocket(WSB + "!forceOrder@arr");
-  wsLiq.onopen = () => $("dLiq").classList.add("on");
 
   connectWhalesAndFlow();
   loadData();
