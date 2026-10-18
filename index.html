@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Crypto Futures — Institutional Pro Terminal (Multi-Tab Modular)</title>
+<title>Crypto Futures — Institutional Pro Terminal (Master Signal Engine)</title>
 <style>
   :root { --bg:#0b0e14; --card:#151a23; --line:#232b38; --text:#e6e9ef; --mute:#8b94a5;
           --green:#16c784; --red:#ea3943; --yellow:#f0b90b; --blue:#4c8dff; --purple:#a78bfa; --orange:#ff9800; --unicorn:#d946ef; }
@@ -11,23 +11,38 @@
   body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif; background:var(--bg); color:var(--text); overflow-x:hidden; }
   .wrap { max-width:1280px; margin:0 auto; padding:12px 10px 60px; }
   
-  /* TOP HEADER & GLOBAL NAV */
-  .top-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:12px; }
+  /* TOP HEADER */
+  .top-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:10px; }
   h1 { font-size:20px; margin:0; font-weight:800; letter-spacing:0.5px; }
   .status { display:flex; gap:12px; flex-wrap:wrap; font-size:11px; color:var(--mute); }
   .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--red); margin-right:4px; }
   .dot.on { background:var(--green); }
   
-  /* GLOBAL SELECTOR BAR */
-  .global-bar { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:12px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+  /* UNIVERSAL SELECTOR BAR */
+  .global-bar { background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 14px; margin-bottom:10px; display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
   select, input[type=text], input[type=number], button { background:#0f131b; color:var(--text); border:1px solid var(--line);
           border-radius:6px; padding:8px 12px; font-size:14px; }
   select { min-width:140px; }
-  button { background:var(--yellow); color:#111; border:none; font-weight:700; cursor:pointer; transition:opacity .15s; }
-  button:hover { opacity:.9; }
+  button { background:var(--yellow); color:#111; border:none; font-weight:700; cursor:pointer; }
   button:disabled { opacity:.5; cursor:wait; }
   .price { font-size:24px; font-weight:800; font-variant-numeric:tabular-nums; margin-left:auto; }
   .up { color:var(--green); } .down { color:var(--red); }
+
+  /* ALWAYS-VISIBLE MASTER SIGNAL HUD */
+  .master-signal-hud { background:linear-gradient(180deg, #18202c 0%, #121722 100%); border:1px solid #2e3a4e; border-radius:12px; padding:14px; margin-bottom:12px; box-shadow:0 4px 20px rgba(0,0,0,0.4); }
+  .sig-header { display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px; border-bottom:1px solid var(--line); padding-bottom:8px; }
+  .sig-badge { display:inline-flex; align-items:center; gap:8px; padding:6px 14px; border-radius:7px; font-weight:800; font-size:20px; }
+  .sig-badge.LONG { background:rgba(22,199,132,.2); color:var(--green); border:1px solid var(--green); }
+  .sig-badge.SHORT { background:rgba(234,57,67,.2); color:var(--red); border:1px solid var(--red); }
+  .sig-badge.WAIT { background:rgba(240,185,11,.15); color:var(--yellow); border:1px solid var(--yellow); }
+  .sig-badge.UNICORN { background:rgba(217,70,239,.22); color:var(--unicorn); border:1px solid var(--unicorn); box-shadow:0 0 15px rgba(217,70,239,0.3); }
+  .sig-grid { display:grid; grid-template-columns:repeat(5, 1fr); gap:8px; }
+  @media (max-width:980px) { .sig-grid { grid-template-columns:repeat(2, 1fr); } }
+  .sig-item { background:#0b0e14; border:1px solid var(--line); border-radius:6px; padding:8px 10px; }
+  .sig-item span { display:block; color:var(--mute); font-size:11px; margin-bottom:2px; font-weight:600; text-transform:uppercase; }
+  .sig-item b { font-size:15px; }
+  .sig-reasons { margin-top:10px; font-size:12px; color:#c7d0e0; display:flex; flex-wrap:wrap; gap:12px; background:#0b0e14; padding:8px 12px; border-radius:6px; border:1px solid #1a2230; }
+  .sig-reasons div { display:flex; align-items:center; gap:5px; }
 
   /* MAIN NAVIGATION MENU TABS */
   .main-tabs { display:flex; gap:6px; overflow-x:auto; padding-bottom:6px; margin-bottom:14px; border-bottom:1px solid var(--line); scrollbar-width:none; }
@@ -38,7 +53,7 @@
   .tab-btn.active { background:var(--blue); color:#fff; border-color:var(--blue); box-shadow:0 0 12px rgba(76,141,255,0.3); }
   .tab-btn.active.unicorn-tab { background:var(--unicorn); border-color:var(--unicorn); box-shadow:0 0 12px rgba(217,70,239,0.3); }
 
-  /* TAB CONTENT PANES */
+  /* TAB PANES */
   .tab-content { display:none; }
   .tab-content.active { display:block; animation:fadeIn .2s ease-in; }
   @keyframes fadeIn { from { opacity:0; transform:translateY(3px); } to { opacity:1; transform:translateY(0); } }
@@ -47,12 +62,6 @@
   .cols { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
   @media (max-width:880px) { .cols { grid-template-columns:1fr; } }
   .row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
-  
-  .badge { display:inline-block; padding:6px 14px; border-radius:6px; font-weight:800; font-size:18px; margin:4px 0 10px; }
-  .LONG { background:rgba(22,199,132,.15); color:var(--green); }
-  .SHORT { background:rgba(234,57,67,.15); color:var(--red); }
-  .WAIT { background:rgba(240,185,11,.15); color:var(--yellow); }
-  .UNICORN { background:rgba(217,70,239,.18); color:var(--unicorn); border:1px solid var(--unicorn); }
   .pill { display:inline-block; padding:2px 7px; border-radius:5px; font-weight:700; font-size:11px; white-space:nowrap; }
   .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:8px; }
   .item { background:#0f131b; border:1px solid var(--line); border-radius:6px; padding:8px; }
@@ -68,9 +77,9 @@
   .big { background:rgba(240,185,11,.12); font-weight:bold; }
   .flow { display:flex; height:18px; border-radius:9px; overflow:hidden; margin-top:6px; font-size:10px; font-weight:800; text-align:center; line-height:18px; }
 
-  /* CANVAS CONTAINER & CONTROLS */
+  /* CANVAS CONTAINERS */
   .chart-container { position:relative; width:100%; user-select:none; }
-  canvas.tv-canvas { width:100%; height:470px; display:block; cursor:crosshair; background:#0b0e14; border-radius:6px; }
+  canvas.tv-canvas { width:100%; height:460px; display:block; cursor:crosshair; background:#0b0e14; border-radius:6px; }
   .chart-nav { position:absolute; right:12px; bottom:12px; display:flex; gap:4px; z-index:10; }
   .nav-btn { background:#151a23; color:var(--text); border:1px solid var(--line); border-radius:4px; width:28px; height:28px;
              font-size:14px; font-weight:bold; display:flex; align-items:center; justify-content:center; cursor:pointer; }
@@ -124,21 +133,202 @@
   <!-- TOP HEADER -->
   <div class="top-header">
     <div>
-      <h1>Crypto Futures — Institutional Terminal</h1>
-      <div class="sub">Quant Regime Engine · Liquidation Clusters · ICT & SMC Blueprint · Whale Radar</div>
+      <h1>Crypto Futures — Institutional Pro Terminal</h1>
+      <div class="sub">Unified A+ Signal Engine · Quant Regime Matrix · SMC & ICT Blueprint · Whale Radar</div>
     </div>
     <div class="status">
-      <div><span class="dot" id="dPrice"></span>Price Stream</div>
+      <div><span class="dot" id="dPrice"></span>Price Feed</div>
       <div><span class="dot" id="dCandle"></span>Moving Candle</div>
       <div><span class="dot" id="dFlow"></span>Taker Flow</div>
       <div><span class="dot" id="dQuant"></span>Quant Engine</div>
     </div>
   </div>
 
-  <!-- UNIVERSAL SELECTOR BAR -->
+  <!-- UNIVERSAL PAIR SELECTOR -->
   <div class="global-bar">
     <div class="row">
       <span style="font-size:12px;color:var(--mute);font-weight:700;">PAIR:</span>
+      <select id="symbol"></select>
+      <button id="go">⚡ Rescan Signals</button>
+    </div>
+    <div id="liveTickerHead" class="price up">---</div>
+  </div>
+
+  <!-- ==================== ALWAYS-VISIBLE MASTER SIGNAL HUD ==================== -->
+  <div class="master-signal-hud" id="masterSignalHud">
+    <div class="sig-header">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span id="sigBadge" class="sig-badge WAIT">WAIT</span>
+        <div>
+          <b id="sigModel" style="font-size:14px;color:var(--text);display:block;">Awaiting Market Assessment...</b>
+          <span id="sigGrade" class="sub" style="font-size:11px;">Confluence Score: --/10</span>
+        </div>
+      </div>
+      <div style="text-align:right;">
+        <span class="sub" style="font-size:11px;display:block;">ESTIMATED RISK/REWARD:</span>
+        <b id="sigRR" style="font-size:15px;color:var(--yellow)">1 : --</b>
+      </div>
+    </div>
+
+    <!-- Live Execution Metrics -->
+    <div class="sig-grid">
+      <div class="sig-item"><span>Target Entry</span><b id="hudEntry">---</b></div>
+      <div class="sig-item"><span>Stop Loss (Invalidation)</span><b id="hudSL" class="down">---</b></div>
+      <div class="sig-item"><span>TP 1 (1.5R Scalp)</span><b id="hudTP1" class="up">---</b></div>
+      <div class="sig-item"><span>TP 2 (2.8R SMC Pool)</span><b id="hudTP2" class="up">---</b></div>
+      <div class="sig-item"><span>TP 3 (4.5R Runner)</span><b id="hudTP3" class="up">---</b></div>
+    </div>
+
+    <!-- Confluence Checklist -->
+    <div class="sig-reasons" id="hudReasons">
+      <div><span>🛡️ Capital Defense:</span> <b>Active</b></div>
+      <div><span>⚖️ PD-Array:</span> <b id="hudPD">Scanning...</b></div>
+      <div><span>📊 Quant Regime:</span> <b id="hudRegime">Scanning...</b></div>
+      <div><span>🌊 Taker Flow:</span> <b id="hudFlow">Tracking...</b></div>
+    </div>
+  </div>
+
+  <!-- MAIN NAVIGATION MENU TABS -->
+  <div class="main-tabs" id="menuTabs">
+    <button class="tab-btn active" data-tab="tab-quant">📊 1. Quant & Liquidation Terminal</button>
+    <button class="tab-btn unicorn-tab" data-tab="tab-smc">🦄 2. SMC & ICT Blueprint (4 PDFs)</button>
+    <button class="tab-btn" data-tab="tab-whales">🐋 3. Whale Radar & Orderflow</button>
+    <button class="tab-btn" data-tab="tab-scanner">🎯 4. Top 150 Scanner & Risk</button>
+    <button class="tab-btn" data-tab="tab-journal">📝 5. Trade Journal</button>
+  </div>
+
+  <!-- ==================== TAB 1: QUANT REGIME & HEATMAP ==================== -->
+  <div id="tab-quant" class="tab-content active">
+    <div class="card">
+      <div class="row" style="justify-content:space-between; margin-bottom:4px">
+        <h2 style="margin:0">Chart 1: Quant Regime & Liquidation Terminal — <span id="cv1Sym">BTCUSDT</span> (<span id="cv1Tf" style="color:var(--yellow)">15m</span>)</h2>
+        <div class="sub">Drag canvas to view 500-candle history · Mouse wheel to Zoom</div>
+      </div>
+
+      <div class="tv-bar" id="tfBar1">
+        <button class="tf-btn" data-tf="1m">1m</button>
+        <button class="tf-btn" data-tf="3m">3m</button>
+        <button class="tf-btn" data-tf="5m">5m</button>
+        <button class="tf-btn active" data-tf="15m">15m</button>
+        <button class="tf-btn" data-tf="1h">1H</button>
+        <button class="tf-btn" data-tf="4h">4H</button>
+        <button class="tf-btn" data-tf="1d">1D</button>
+      </div>
+
+      <div class="ind-bar" id="indBar1">
+        <span style="font-size:11px;font-weight:700;color:var(--mute);margin-right:4px;">OVERLAYS:</span>
+        <div class="ind-pill active yellow" data-ind="ema">EMA (9,21,50)</div>
+        <div class="ind-pill active" data-ind="heat">Liquidation Heatmap</div>
+        <div class="ind-pill active" data-ind="bb">Bollinger Bands</div>
+        <div class="ind-pill active" data-ind="vol">Volume Bars</div>
+        <div class="ind-pill active" data-ind="rsi">RSI Sub-Chart (14)</div>
+      </div>
+
+      <div class="sub" id="ohlc1" style="margin-bottom:6px;font-family:monospace;font-size:12px;">Connecting feed...</div>
+
+      <div class="chart-container">
+        <canvas id="cv1" class="tv-canvas"></canvas>
+        <div class="chart-nav">
+          <button class="nav-btn" id="btnZoomIn1">+</button>
+          <button class="nav-btn" id="btnZoomOut1">−</button>
+          <button class="nav-btn" id="btnReset1">↺</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 15 MEASUREMENTS QUANT MATRIX -->
+    <div class="card">
+      <div class="quant-header">
+        <div>
+          <div class="quant-title">15 measurements, 15 learned weights</div>
+          <div class="sub" style="font-size:11px;margin-top:2px;">← TOWARD CHOP &nbsp;|&nbsp; TOWARD TREND →</div>
+        </div>
+        <div id="regimeBadge" class="regime-badge regime-chop">CALCULATING...</div>
+      </div>
+      <div class="quant-cols">
+        <div>
+          <div class="sub" style="font-weight:700;margin-bottom:6px;">WHAT THE MARKET JUST DID</div>
+          <div id="qCol1">Loading measurements...</div>
+        </div>
+        <div>
+          <div class="sub" style="font-weight:700;margin-bottom:6px;">WHAT IT'S BEEN DOING LATELY</div>
+          <div id="qCol2">Loading measurements...</div>
+        </div>
+      </div>
+      <div id="quantSummary" class="sub" style="margin-top:8px;padding:8px;background:#0b0e14;border-radius:6px;">Calculating quant matrices...</div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 2: SMC & ICT BLUEPRINT (4 PDFs) ==================== -->
+  <div id="tab-smc" class="tab-content">
+    <div class="ict-banner">
+      <div>
+        <b>ICT Killzones (EST):</b>
+        <span class="kz-tag" id="kzLondon">London (3-5 AM)</span>
+        <span class="kz-tag" id="kzNY">New York (7-10 AM)</span>
+        <span class="kz-tag" id="kzAsia">Asian (7-10 PM)</span>
+      </div>
+      <div>
+        <b>ICT Power of 3 (PO3):</b> <span id="po3State" style="font-weight:800;color:var(--yellow)">Scanning State...</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="justify-content:space-between; margin-bottom:4px">
+        <h2 style="margin:0">Chart 2: Pure SMC Footprints & Unicorn POI — <span id="cv2Sym">BTCUSDT</span> (<span id="cv2Tf" style="color:var(--yellow)">15m</span>)</h2>
+        <div class="sub">50% Equilibrium (PD-Array) · Unicorn POIs · Order Blocks · FVGs</div>
+      </div>
+
+      <div class="tv-bar" id="tfBar2">
+        <button class="tf-btn" data-tf="1m">1m</button>
+        <button class="tf-btn" data-tf="3m">3m</button>
+        <button class="tf-btn" data-tf="5m">5m</button>
+        <button class="tf-btn active" data-tf="15m">15m</button>
+        <button class="tf-btn" data-tf="1h">1H</button>
+        <button class="tf-btn" data-tf="4h">4H</button>
+        <button class="tf-btn" data-tf="1d">1D</button>
+      </div>
+
+      <div class="ind-bar" id="indBar2">
+        <span style="font-size:11px;font-weight:700;color:var(--mute);margin-right:4px;">SMC FOOTPRINTS:</span>
+        <div class="ind-pill active magenta" data-ind="unicorn">🦄 Unicorn POI</div>
+        <div class="ind-pill active green" data-ind="ob">Order Blocks (+OB/-OB)</div>
+        <div class="ind-pill active" data-ind="fvg">Fair Value Gaps (FVG)</div>
+        <div class="ind-pill active yellow" data-ind="pd">PD-Array 50% Equilibrium</div>
+        <div class="ind-pill active" data-ind="breakers">Breaker Blocks</div>
+      </div>
+
+      <div class="sub" id="ohlc2" style="margin-bottom:6px;font-family:monospace;font-size:12px;">Connecting SMC feed...</div>
+
+      <div class="chart-container">
+        <canvas id="cv2" class="tv-canvas"></canvas>
+        <div class="chart-nav">
+          <button class="nav-btn" id="btnZoomIn2">+</button>
+          <button class="nav-btn" id="btnZoomOut2">−</button>
+          <button class="nav-btn" id="btnReset2">↺</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SMC Reference Points -->
+    <div class="card">
+      <h2>Active SMC Reference Points (PD-Arrays)</h2>
+      <div id="obBox" class="sub">Scanning reference points...</div>
+    </div>
+  </div>
+
+  <!-- ==================== TAB 3: WHALE RADAR & ORDERFLOW ==================== -->
+  <div id="tab-whales" class="tab-content">
+    <div class="card">
+      <div class="row" style="justify-content:space-between; margin-bottom:4px">
+        <h2 style="margin:0">Live Real-Time Buying vs Selling Flow (Taker Tape)</h2>
+        <div id="tapeSpeed" class="sub">Taker Execution: Active</div>
+      </div>
+      <div class="flow" id="liveFlowBar">
+        <div id="flowBuy" style="width:50%; background:var(--green); color:#111">50% BUY</div>
+        <div id="flowSell" style="width:50%; background:var(--red); color:#fff">50% SELL</div>
+      </div>
+      <div class="
       <select id="symbol"></select>
       <button id="go">Sync All Models</button>
     </div>
