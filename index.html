@@ -126,8 +126,24 @@
   .heat-row { display:flex; justify-content:space-between; align-items:center; padding:5px 8px; border-radius:5px; margin-bottom:4px; font-size:11px; font-weight:700; }
   .heat-short { background:rgba(234,57,67,0.15); border-left:4px solid var(--red); color:#ff7b82; }
   .heat-long { background:rgba(22,199,132,0.15); border-left:4px solid var(--green); color:#75f5c3; }
+
+  .sub { color:var(--mute); font-size:12px; }
+  h2 { font-size:15px; margin:0 0 8px; }
+  .badge { display:inline-flex; gap:8px; align-items:center; padding:6px 14px; border-radius:7px; font-weight:800; font-size:18px; margin-bottom:10px; }
+  .badge small { font-size:11px; font-weight:600; opacity:.85; }
+  .badge.LONG, .pill.LONG { background:rgba(22,199,132,.2); color:var(--green); border:1px solid var(--green); }
+  .badge.SHORT, .pill.SHORT { background:rgba(234,57,67,.2); color:var(--red); border:1px solid var(--red); }
+  .badge.WAIT, .pill.WAIT { background:rgba(240,185,11,.15); color:var(--yellow); border:1px solid var(--yellow); }
+  .badge.UNICORN, .pill.UNICORN { background:rgba(217,70,239,.22); color:var(--unicorn); border:1px solid var(--unicorn); }
+  .q-neg { color:var(--red); } .q-pos { color:var(--blue); }
+  .wall { display:flex; justify-content:space-between; padding:5px 8px; margin-bottom:4px; border-radius:5px; font-size:12px; font-weight:700; }
+  .wall.bid { background:rgba(22,199,132,.13); border-left:4px solid var(--green); }
+  .wall.ask { background:rgba(234,57,67,.13); border-left:4px solid var(--red); }
+  .tag { padding:2px 7px; border-radius:4px; font-size:11px; font-weight:800; }
+  label { font-size:12px; color:var(--mute); }
 </style>
 </head>
+<body>
 <body>
 <div class="wrap">
   <!-- TOP HEADER -->
@@ -185,6 +201,12 @@
       <div><span>⚖️ PD-Array:</span> <b id="hudPD">Scanning...</b></div>
       <div><span>📊 Quant Regime:</span> <b id="hudRegime">Scanning...</b></div>
       <div><span>🌊 Taker Flow:</span> <b id="hudFlow">Tracking...</b></div>
+      <div><span>🧭 HTF Trend:</span> <b id="hudHTF">-</b></div>
+      <div><span>🐋 Whales 10m:</span> <b id="hudWhale">-</b></div>
+      <div><span>📚 Book:</span> <b id="hudBook">-</b></div>
+      <div><span>💥 Liq 15m:</span> <b id="hudLiq">-</b></div>
+      <div><span>🏦 Top Pos:</span> <b id="hudTop">-</b></div>
+      <div style="width:100%"><span>🧾 Score:</span> <b id="hudWhy" style="font-weight:600;color:#9fb0c8">-</b></div>
     </div>
   </div>
 
@@ -195,153 +217,7 @@
     <button class="tab-btn" data-tab="tab-whales">🐋 3. Whale Radar & Orderflow</button>
     <button class="tab-btn" data-tab="tab-scanner">🎯 4. Top 150 Scanner & Risk</button>
     <button class="tab-btn" data-tab="tab-journal">📝 5. Trade Journal</button>
-  </div>
-
-  <!-- ==================== TAB 1: QUANT REGIME & HEATMAP ==================== -->
-  <div id="tab-quant" class="tab-content active">
-    <div class="card">
-      <div class="row" style="justify-content:space-between; margin-bottom:4px">
-        <h2 style="margin:0">Chart 1: Quant Regime & Liquidation Terminal — <span id="cv1Sym">BTCUSDT</span> (<span id="cv1Tf" style="color:var(--yellow)">15m</span>)</h2>
-        <div class="sub">Drag canvas to view 500-candle history · Mouse wheel to Zoom</div>
-      </div>
-
-      <div class="tv-bar" id="tfBar1">
-        <button class="tf-btn" data-tf="1m">1m</button>
-        <button class="tf-btn" data-tf="3m">3m</button>
-        <button class="tf-btn" data-tf="5m">5m</button>
-        <button class="tf-btn active" data-tf="15m">15m</button>
-        <button class="tf-btn" data-tf="1h">1H</button>
-        <button class="tf-btn" data-tf="4h">4H</button>
-        <button class="tf-btn" data-tf="1d">1D</button>
-      </div>
-
-      <div class="ind-bar" id="indBar1">
-        <span style="font-size:11px;font-weight:700;color:var(--mute);margin-right:4px;">OVERLAYS:</span>
-        <div class="ind-pill active yellow" data-ind="ema">EMA (9,21,50)</div>
-        <div class="ind-pill active" data-ind="heat">Liquidation Heatmap</div>
-        <div class="ind-pill active" data-ind="bb">Bollinger Bands</div>
-        <div class="ind-pill active" data-ind="vol">Volume Bars</div>
-        <div class="ind-pill active" data-ind="rsi">RSI Sub-Chart (14)</div>
-      </div>
-
-      <div class="sub" id="ohlc1" style="margin-bottom:6px;font-family:monospace;font-size:12px;">Connecting feed...</div>
-
-      <div class="chart-container">
-        <canvas id="cv1" class="tv-canvas"></canvas>
-        <div class="chart-nav">
-          <button class="nav-btn" id="btnZoomIn1">+</button>
-          <button class="nav-btn" id="btnZoomOut1">−</button>
-          <button class="nav-btn" id="btnReset1">↺</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 15 MEASUREMENTS QUANT MATRIX -->
-    <div class="card">
-      <div class="quant-header">
-        <div>
-          <div class="quant-title">15 measurements, 15 learned weights</div>
-          <div class="sub" style="font-size:11px;margin-top:2px;">← TOWARD CHOP &nbsp;|&nbsp; TOWARD TREND →</div>
-        </div>
-        <div id="regimeBadge" class="regime-badge regime-chop">CALCULATING...</div>
-      </div>
-      <div class="quant-cols">
-        <div>
-          <div class="sub" style="font-weight:700;margin-bottom:6px;">WHAT THE MARKET JUST DID</div>
-          <div id="qCol1">Loading measurements...</div>
-        </div>
-        <div>
-          <div class="sub" style="font-weight:700;margin-bottom:6px;">WHAT IT'S BEEN DOING LATELY</div>
-          <div id="qCol2">Loading measurements...</div>
-        </div>
-      </div>
-      <div id="quantSummary" class="sub" style="margin-top:8px;padding:8px;background:#0b0e14;border-radius:6px;">Calculating quant matrices...</div>
-    </div>
-  </div>
-
-  <!-- ==================== TAB 2: SMC & ICT BLUEPRINT (4 PDFs) ==================== -->
-  <div id="tab-smc" class="tab-content">
-    <div class="ict-banner">
-      <div>
-        <b>ICT Killzones (EST):</b>
-        <span class="kz-tag" id="kzLondon">London (3-5 AM)</span>
-        <span class="kz-tag" id="kzNY">New York (7-10 AM)</span>
-        <span class="kz-tag" id="kzAsia">Asian (7-10 PM)</span>
-      </div>
-      <div>
-        <b>ICT Power of 3 (PO3):</b> <span id="po3State" style="font-weight:800;color:var(--yellow)">Scanning State...</span>
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="row" style="justify-content:space-between; margin-bottom:4px">
-        <h2 style="margin:0">Chart 2: Pure SMC Footprints & Unicorn POI — <span id="cv2Sym">BTCUSDT</span> (<span id="cv2Tf" style="color:var(--yellow)">15m</span>)</h2>
-        <div class="sub">50% Equilibrium (PD-Array) · Unicorn POIs · Order Blocks · FVGs</div>
-      </div>
-
-      <div class="tv-bar" id="tfBar2">
-        <button class="tf-btn" data-tf="1m">1m</button>
-        <button class="tf-btn" data-tf="3m">3m</button>
-        <button class="tf-btn" data-tf="5m">5m</button>
-        <button class="tf-btn active" data-tf="15m">15m</button>
-        <button class="tf-btn" data-tf="1h">1H</button>
-        <button class="tf-btn" data-tf="4h">4H</button>
-        <button class="tf-btn" data-tf="1d">1D</button>
-      </div>
-
-      <div class="ind-bar" id="indBar2">
-        <span style="font-size:11px;font-weight:700;color:var(--mute);margin-right:4px;">SMC FOOTPRINTS:</span>
-        <div class="ind-pill active magenta" data-ind="unicorn">🦄 Unicorn POI</div>
-        <div class="ind-pill active green" data-ind="ob">Order Blocks (+OB/-OB)</div>
-        <div class="ind-pill active" data-ind="fvg">Fair Value Gaps (FVG)</div>
-        <div class="ind-pill active yellow" data-ind="pd">PD-Array 50% Equilibrium</div>
-        <div class="ind-pill active" data-ind="breakers">Breaker Blocks</div>
-      </div>
-
-      <div class="sub" id="ohlc2" style="margin-bottom:6px;font-family:monospace;font-size:12px;">Connecting SMC feed...</div>
-
-      <div class="chart-container">
-        <canvas id="cv2" class="tv-canvas"></canvas>
-        <div class="chart-nav">
-          <button class="nav-btn" id="btnZoomIn2">+</button>
-          <button class="nav-btn" id="btnZoomOut2">−</button>
-          <button class="nav-btn" id="btnReset2">↺</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- SMC Reference Points -->
-    <div class="card">
-      <h2>Active SMC Reference Points (PD-Arrays)</h2>
-      <div id="obBox" class="sub">Scanning reference points...</div>
-    </div>
-  </div>
-
-  <!-- ==================== TAB 3: WHALE RADAR & ORDERFLOW ==================== -->
-  <div id="tab-whales" class="tab-content">
-    <div class="card">
-      <div class="row" style="justify-content:space-between; margin-bottom:4px">
-        <h2 style="margin:0">Live Real-Time Buying vs Selling Flow (Taker Tape)</h2>
-        <div id="tapeSpeed" class="sub">Taker Execution: Active</div>
-      </div>
-      <div class="flow" id="liveFlowBar">
-        <div id="flowBuy" style="width:50%; background:var(--green); color:#111">50% BUY</div>
-        <div id="flowSell" style="width:50%; background:var(--red); color:#fff">50% SELL</div>
-      </div>
-      <div class="
-      <select id="symbol"></select>
-      <button id="go">Sync All Models</button>
-    </div>
-    <div id="liveTickerHead" class="price up">---</div>
-  </div>
-
-  <!-- MAIN NAVIGATION MENU TABS -->
-  <div class="main-tabs" id="menuTabs">
-    <button class="tab-btn active" data-tab="tab-quant">📊 1. Quant & Liquidation Terminal</button>
-    <button class="tab-btn unicorn-tab" data-tab="tab-smc">🦄 2. SMC & ICT Blueprint (4 PDFs)</button>
-    <button class="tab-btn" data-tab="tab-whales">🐋 3. Whale Radar & Orderflow</button>
-    <button class="tab-btn" data-tab="tab-scanner">🎯 4. Top 150 Scanner & Risk</button>
-    <button class="tab-btn" data-tab="tab-journal">📝 5. Trade Journal</button>
+    <button class="tab-btn" data-tab="tab-bt">📈 6. Backtest & Live Tracker</button>
   </div>
 
   <!-- ==================== TAB 1: QUANT REGIME & HEATMAP ==================== -->
@@ -497,10 +373,22 @@
     </div>
 
     <div class="cols">
+      <div class="card">
+        <h2>📚 Live Order Book — Large Orders (Walls)</h2>
+        <div id="bookBox" class="sub">Connecting depth stream...</div>
+      </div>
+      <div class="card">
+        <h2>🧱 Live Order Blocks (nearest to price)</h2>
+        <div id="liveOB" class="sub">Scanning...</div>
+      </div>
+    </div>
+
+    <div class="cols">
       <div>
         <!-- Whale Tape -->
         <div class="card">
-          <h2>Live Whale Tape 🐋 (> $25,000 Large Orders)</h2>
+          <h2>Live Whale Tape 🐋 (large prints ≥ <span id="whaleMinTxt">$25K</span>)</h2>
+          <div id="whaleSum" class="sub" style="margin-bottom:6px"></div>
           <div class="scroll">
             <table><thead><tr><th>Time</th><th>Side</th><th>Price</th><th>USD</th></tr></thead>
             <tbody id="whaleFeed"><tr><td colspan="4" class="sub">Tracking large prints...</td></tr></tbody></table>
@@ -523,7 +411,8 @@
 
     <!-- Live Liquidations Stream -->
     <div class="card">
-      <h2>Multi-Exchange Liquidations Stream</h2>
+      <h2>💥 Live Liquidations (selected pair highlighted)</h2>
+      <div id="liqStat" class="sub" style="margin-bottom:8px"></div>
       <div class="scroll" style="max-height:220px">
         <table><thead><tr><th>Time</th><th>Coin</th><th>Type</th><th>Price</th><th>USD</th></tr></thead>
         <tbody id="liqFeed"><tr><td colspan="5" class="sub">Monitoring liquidations...</td></tr></tbody></table>
@@ -587,6 +476,32 @@
     </div>
   </div>
 
+  <!-- ==================== TAB 6: BACKTEST & FORWARD TRACKER ==================== -->
+  <div id="tab-bt" class="tab-content">
+    <div class="card">
+      <h2>📈 Backtest & Auto-Tune (selected pair + timeframe)</h2>
+      <div class="sub" style="margin-bottom:8px">Engine ~1500 closed candles par chalta hai (structure + regime + trend + HTF). Fees+slippage 0.1% round-trip included. Whale/liquidation/orderbook ki history nahi milti, isliye woh sirf live signal mein count hote hain.</div>
+      <div class="row"><button id="btRun">▶ Run Backtest</button><button id="btApply" disabled>Apply Best Threshold</button><span id="btStatus" class="sub"></span></div>
+      <div class="scroll" style="margin-top:10px">
+        <table><thead><tr><th>Min Score</th><th>Trades</th><th>Win %</th><th>Avg R</th><th>PF</th><th>Total R</th><th>Max DD</th></tr></thead>
+        <tbody id="btTable"><tr><td colspan="7" class="sub">Run backtest to see results.</td></tr></tbody></table>
+      </div>
+      <div id="btVerdict" class="sub" style="margin-top:8px"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h2 style="margin:0">🧪 Live Forward Tracker (real signals, real prices)</h2>
+        <label><input type="checkbox" id="alertOn" checked> 🔔 Beep on new signal</label>
+        <button id="fwdClear">Clear</button>
+      </div>
+      <div id="fwdStats" class="sub" style="margin:8px 0">No signals tracked yet.</div>
+      <div class="scroll">
+        <table><thead><tr><th>Time</th><th>Pair</th><th>Side</th><th>Entry</th><th>SL</th><th>TP1</th><th>Status</th><th>R</th></tr></thead>
+        <tbody id="fwdTable"><tr><td colspan="8" class="sub">Signals appear here automatically.</td></tr></tbody></table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <script>
@@ -613,6 +528,380 @@ const fmt = x => x >= 100 ? x.toFixed(2) : x >= 1 ? x.toFixed(4) : x >= 0.001 ? 
 const money = x => x >= 1e9 ? (x/1e9).toFixed(2)+"B" : x >= 1e6 ? (x/1e6).toFixed(2)+"M" : (x/1e3).toFixed(1)+"K";
 const tstr = t => new Date(t).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'});
 const key = (s, tf) => `${s}_${tf}`;
+
+/* ===== API with host fallback + error display ===== */
+const HOSTS = ["https://fapi.binance.com","https://fapi1.binance.com","https://fapi2.binance.com","https://fapi3.binance.com"];
+let hostIdx = 0;
+async function api(path) {
+  let lastErr;
+  for (let t = 0; t < HOSTS.length; t++) {
+    const h = HOSTS[(hostIdx + t) % HOSTS.length];
+    try {
+      const r = await fetch(h + path);
+      const j = await r.json();
+      if (j && j.code && j.msg) throw new Error(j.msg);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      hostIdx = (hostIdx + t) % HOSTS.length;
+      return j;
+    } catch (e) { lastErr = e; }
+  }
+  throw lastErr || new Error("API unreachable");
+}
+function showFeedError(e) {
+  console.error(e);
+  const b = $("sigBadge"); if (!b) return;
+  b.className = "sig-badge WAIT"; b.textContent = "NO DATA";
+  $("sigModel").textContent = "Data feed error: " + ((e && e.message) || e) + " (Binance Futures kuch regions/ISP par blocked hai - VPN ya dusra network try karo)";
+}
+
+/* ===== SIGNAL ENGINE v3 : closed candles + HTF + orderflow + liquidations + positioning ===== */
+let SIG_MIN = 6.5;
+const FEE_RT = 0.001;            // taker fees + slippage (round trip) used in backtest
+const MIN_RISK_PCT = 0.0015;     // SL distance smaller than this = fees eat the edge -> no trade
+const HTF_MAP = { "1m":"15m", "3m":"15m", "5m":"1h", "15m":"1h", "1h":"4h", "4h":"1d", "1d":null };
+const TF_MS = { "1m":60000, "3m":180000, "5m":300000, "15m":900000, "1h":3600000, "4h":14400000, "1d":86400000 };
+let htfObj = null, whaleLog = [], liqLog = [], deriv = null;
+let book = { ok:false, imb:0, bidUsd:0, askUsd:0, mid:0, walls:[] };
+
+function closedOnly(k) {
+  if (!k || !k.length) return k || [];
+  const last = k[k.length - 1];
+  return (+last[6] > Date.now()) ? k.slice(0, -1) : k;
+}
+function inKillzone() {
+  const h = (new Date().getUTCHours() - 5 + 24) % 24;
+  return (h >= 3 && h < 5) || (h >= 7 && h < 10) || (h >= 19 && h < 22);
+}
+function currentFlowPct() {
+  const t = liveBuyTotal + liveSellTotal;
+  return t > 0 ? liveBuyTotal / t * 100 : null;
+}
+
+/* Higher-timeframe trend filter */
+function makeHtf(k) {
+  if (!k || k.length < 60) return null;
+  const C = k.map(x => +x[4]), e21 = ema(C, 21), e50 = ema(C, 50);
+  const ct = k.map(x => +x[6]);
+  const bias = C.map((c, i) => (e21[i] == null || e50[i] == null) ? 0 : (c > e21[i] && e21[i] > e50[i] ? 1 : (c < e21[i] && e21[i] < e50[i] ? -1 : 0)));
+  return { ct, bias };
+}
+function htfAt(h, t) {
+  if (!h) return null;
+  let lo = 0, hi = h.ct.length - 1, r = -1;
+  while (lo <= hi) { const m = (lo + hi) >> 1; if (h.ct[m] <= t) { r = m; lo = m + 1; } else hi = m - 1; }
+  return r < 0 ? null : h.bias[r];
+}
+async function refreshHTF(sym, my) {
+  const name = HTF_MAP[tf2]; htfObj = null;
+  if (!name) return;
+  try {
+    const k = await api(`/fapi/v1/klines?symbol=${sym}&interval=${name}&limit=300`);
+    if (my === undefined || my === reqId) htfObj = makeHtf(closedOnly(k));
+  } catch (e) { console.error(e); }
+}
+
+/* Live order-flow / liquidation / positioning inputs */
+function whaleStats() {
+  const now = Date.now(); let buy = 0, sell = 0, n = 0;
+  whaleLog.forEach(w => { if (w.sym === sel && now - w.t <= 600000) { n++; if (w.side === "BUY") buy += w.usd; else sell += w.usd; } });
+  return { buy, sell, n };
+}
+function liqStats(sym) {
+  const now = Date.now(), q = (prices[sym] && prices[sym].q) || 0, thr = Math.max(20000, q * 0.00002);
+  let long15 = 0, short15 = 0, long2 = 0, short2 = 0;
+  liqLog.forEach(l => {
+    if (l.sym !== sym) return; const age = now - l.t;
+    if (age <= 900000) { if (l.side === "LONG") long15 += l.usd; else short15 += l.usd; }
+    if (age <= 120000) { if (l.side === "LONG") long2 += l.usd; else short2 += l.usd; }
+  });
+  return { long15, short15, long2, short2, thr };
+}
+function gatherExt() {
+  return { flow: currentFlowPct(), whale: whaleStats(), imb: book.ok ? book.imb : null, liq: liqStats(sel), deriv };
+}
+
+/* Per-side confluence score, normalised to 0-10 by the factors actually available */
+function scoreSide(side, c) {
+  const L = side === "LONG", { smc, quant, price, A, e21, e50, ext, htf, rsiV, volR, lastBull, lastBear } = c;
+  let s = 0, max = 0, zone = null, model = "No setup", gateOk = true;
+  const why = [], gateWhy = [];
+  const add = (pts, m, label) => { max += m; if (pts) { s += pts; why.push(`${label} ${pts > 0 ? "+" : ""}${pts}`); } };
+  const valid = z => L ? price > z.bottom - 0.3 * A : price < z.top + 0.3 * A;
+  const near  = z => price >= z.bottom - 1.2 * A && price <= z.top + 1.2 * A;
+  const pick = arr => arr.filter(z => valid(z) && near(z)).pop();
+  const uni = pick(smc.unicorns.filter(u => u.type === (L ? "BULL_UNICORN" : "BEAR_UNICORN")));
+  const ob  = pick(L ? smc.bulls : smc.bears);
+  const fvg = pick(L ? smc.fvgBull : smc.fvgBear);
+  if (uni)      { zone = uni; model = "🦄 UNICORN"; add(3, 3, "Unicorn"); }
+  else if (ob)  { zone = ob;  model = L ? "+OB" : "-OB"; add(2, 3, "OB"); }
+  else if (fvg) { zone = fvg; model = "FVG"; add(1, 3, "FVG"); }
+  else { add(0, 3, ""); why.push("No POI near price"); }
+  add((L ? smc.dealing.isDiscount : smc.dealing.isPremium) ? 1.5 : 0, 1.5, "PD-zone");
+  add((L ? smc.is3CandleBull : smc.is3CandleBear) ? 1 : 0, 1, "3-candle");
+  if (quant) add(quant.regime === "TOWARD TREND" ? 2 : (quant.negCount >= 10 ? -1 : 0), 2, "Regime");
+  const up = price > e21 && e21 > e50, dn = price < e21 && e21 < e50;
+  add((L ? up : dn) ? 1.5 : ((L ? price > e50 : price < e50) ? 0.75 : 0), 1.5, "EMA");
+  if (htf !== null && htf !== undefined) {
+    const al = L ? htf === 1 : htf === -1, ag = L ? htf === -1 : htf === 1;
+    add(al ? 1.5 : (ag ? -1.5 : 0), 1.5, "HTF");
+    if (ag) { gateOk = false; gateWhy.push("HTF trend against"); }
+  }
+  if (rsiV != null && ((L && rsiV > 75) || (!L && rsiV < 25))) add(-1, 0, "RSI stretched");
+  add((volR >= 1.3 && (L ? lastBull : lastBear)) ? 0.5 : 0, 0.5, "Volume");
+  add(inKillzone() ? 0.5 : 0, 0.5, "Killzone");
+  if (ext) {
+    if (ext.flow !== null) add(L ? (ext.flow >= 55 ? 1 : (ext.flow <= 40 ? -1 : 0)) : (ext.flow <= 45 ? 1 : (ext.flow >= 60 ? -1 : 0)), 1, "Flow");
+    const w = ext.whale, tot = w.buy + w.sell; let wp = 0;
+    if (w.n >= 3 && tot > 0) { const r = (w.buy - w.sell) / tot; wp = (L ? r >= 0.25 : r <= -0.25) ? 1 : ((L ? r <= -0.25 : r >= 0.25) ? -1 : 0); }
+    add(wp, 1, "Whales");
+    if (ext.imb !== null) { const v = L ? ext.imb : -ext.imb; add(v >= 0.15 ? 0.5 : (v <= -0.15 ? -0.5 : 0), 0.5, "Book"); }
+    const lv = L ? ext.liq.long15 : ext.liq.short15, l2 = L ? ext.liq.long2 : ext.liq.short2, th = ext.liq.thr;
+    add(l2 >= 3 * th ? -1 : (lv >= th ? 1 : 0), 1, "Liq");
+    if (ext.deriv && ext.deriv.topRatio) {
+      const r = ext.deriv.topRatio;
+      add(L ? (r >= 1.15 ? 0.75 : (r <= 0.87 ? -0.5 : 0)) : (r <= 0.87 ? 0.75 : (r >= 1.15 ? -0.5 : 0)), 0.75, "TopPos");
+    }
+    if (ext.deriv && ext.deriv.funding != null) { const f = ext.deriv.funding; if ((L && f >= 0.0005) || (!L && f <= -0.0005)) add(-0.75, 0, "Funding crowded"); }
+  }
+  return { side, score: Math.max(0, Math.min(10, max > 0 ? s / max * 10 : 0)), zone, model, why, gateOk, gateWhy };
+}
+function makeLevels(side, zone, price, A) {
+  const Lg = side === "LONG"; let entry = price;
+  if (Lg && price > zone.top) entry = zone.top;
+  if (!Lg && price < zone.bottom) entry = zone.bottom;
+  let risk = Math.abs(entry - (Lg ? zone.bottom - 0.25 * A : zone.top + 0.25 * A));
+  risk = Math.min(Math.max(risk, A), 2.5 * A);
+  return { side, entry, sl: Lg ? entry - risk : entry + risk,
+           tp: [1.5, 2.8, 4.5].map(r => Lg ? entry + risk * r : entry - risk * r), limit: entry !== price, riskPct: risk / entry };
+}
+function computeSignal(rawK1, rawK2, ext, htf) {
+  ext = ext || null; htf = htf || null;
+  const k1 = closedOnly(rawK1), k2 = closedOnly(rawK2);
+  if (!Array.isArray(k2) || k2.length < 80) throw new Error("Not enough closed candles");
+  const T = k2.map(x=>+x[0]), O = k2.map(x=>+x[1]), H = k2.map(x=>+x[2]), L = k2.map(x=>+x[3]), C = k2.map(x=>+x[4]), V = k2.map(x=>+x[5]);
+  const a = atr(H, L, C), n = C.length - 1, A = a[n], price = C[n];
+  const smc = findSMCFootprints(T, O, H, L, C, a);
+  const quant = (k1 && k1.length >= 60) ? computeQuantWeights(k1) : null;
+  const e21 = ema(C, 21)[n] || price, e50 = ema(C, 50)[n] || price;
+  const rsiV = rsi(C)[n];
+  let va = 0; for (let j = n - 20; j < n; j++) va += V[j]; va /= 20;
+  const volR = va > 0 ? V[n] / va : 1;
+  const htfB = htf ? htfAt(htf, +k2[n][6]) : null;
+  const ctx = { smc, quant, price, A, e21, e50, ext, htf: htfB, rsiV, volR, lastBull: C[n] > O[n], lastBear: C[n] < O[n] };
+  const cands = [scoreSide("LONG", ctx), scoreSide("SHORT", ctx)];
+  cands.forEach(c => {
+    c.cand = c.zone ? makeLevels(c.side, c.zone, price, A) : null;
+    if (c.cand && c.cand.riskPct < MIN_RISK_PCT) { c.gateOk = false; c.gateWhy.push("Risk < fees"); }
+  });
+  const valid = cands.filter(c => c.zone && c.gateOk);
+  const best = (valid.length ? valid : cands).slice().sort((x, y) => y.score - x.score)[0];
+  const chopStrict = !!(quant && quant.regime === "TOWARD CHOP" && quant.negCount >= 10);
+  const need = SIG_MIN + (chopStrict ? 1.5 : 0);
+  const ok = !!(best.zone && best.gateOk && best.score >= need);
+  const cd = best.cand;
+  const R = { side: ok ? best.side : "WAIT", price, A, smc, quant, score: best.score, bestSide: best.side, need, chopStrict,
+    modelType: ok ? best.model : "No setup", why: best.why.concat(best.gateWhy.map(g => "⛔ " + g)).join(" · "),
+    grade: best.score >= 8.5 ? "A+" : best.score >= 7.5 ? "A" : best.score >= SIG_MIN ? "B" : "-",
+    gateOk: best.gateOk && !!best.zone, cand: (best.zone ? cd : null), htf: htfB, ext,
+    flow: ext ? ext.flow : null, entry: null, sl: null, tp: [null, null, null], rr: null, limit: false,
+    candleT: +k2[n][0] };
+  if (ok) { R.entry = cd.entry; R.sl = cd.sl; R.tp = cd.tp; R.rr = 2.8; R.limit = cd.limit; }
+  return { R, smc, quant };
+}
+
+/* ===== HUD ===== */
+function updateHUD(R) {
+  const b = $("sigBadge"), live = R.side !== "WAIT";
+  b.className = "sig-badge " + (!live ? "WAIT" : (R.modelType.includes("UNICORN") ? "UNICORN" : R.side));
+  b.textContent = R.side;
+  $("sigModel").textContent = live ? R.modelType + (R.limit ? " (limit entry)" : " (market zone)")
+      : `No valid setup - best: ${R.bestSide} ${R.score.toFixed(1)}/10, need ${R.need.toFixed(1)}`;
+  $("sigGrade").textContent = `Confluence Score: ${R.score.toFixed(1)}/10 · Grade ${R.grade} · closed candles`;
+  $("sigRR").textContent = live ? "1 : " + R.rr : "1 : --";
+  $("hudEntry").textContent = live ? fmt(R.entry) : "---";
+  $("hudSL").textContent = live ? fmt(R.sl) : "---";
+  ["hudTP1","hudTP2","hudTP3"].forEach((id, i) => $(id).textContent = live ? fmt(R.tp[i]) : "---");
+  $("hudPD").textContent = R.smc.dealing.isDiscount ? "Discount (<50%) 🟢" : "Premium (>50%) 🔴";
+  $("hudRegime").textContent = R.quant ? `${R.quant.regime} (${R.quant.negCount}/15 neg)` : "n/a";
+  $("hudFlow").textContent = R.flow === null || R.flow === undefined ? "Waiting..." : `${R.flow.toFixed(0)}% BUY`;
+  $("hudHTF").textContent = R.htf === null || R.htf === undefined ? "n/a" : (R.htf === 1 ? "UP 🟢" : R.htf === -1 ? "DOWN 🔴" : "FLAT ⚪");
+  const e = R.ext;
+  if (e) {
+    $("hudWhale").textContent = `${money(e.whale.buy)} buy / ${money(e.whale.sell)} sell (${e.whale.n})`;
+    $("hudBook").textContent = e.imb === null ? "n/a" : `${e.imb >= 0 ? "+" : ""}${(e.imb * 100).toFixed(0)}% ${e.imb >= 0 ? "bids" : "asks"}`;
+    $("hudLiq").textContent = `L ${money(e.liq.long15)} / S ${money(e.liq.short15)}`;
+    $("hudTop").textContent = e.deriv && e.deriv.topRatio ? `L/S ${e.deriv.topRatio.toFixed(2)}${e.deriv.funding != null ? " · fund " + (e.deriv.funding * 100).toFixed(3) + "%" : ""}` : "n/a";
+  }
+  $("hudWhy").textContent = R.why;
+  if (live) {
+    const ent = $("entryPrice"), slp = $("slPrice");
+    if (document.activeElement !== ent && document.activeElement !== slp) { ent.value = R.entry; slp.value = R.sl; calcPosition(); }
+  }
+  renderLiveOB(R); renderReferencePoints(R.smc); trackNewSignal(R);
+}
+function renderLiveOB(R) {
+  const p = R.price, rows = [], smc = R.smc;
+  smc.unicorns.forEach(z => rows.push({ ...z, label: z.type === "BULL_UNICORN" ? "🦄 Bull Unicorn" : "🦄 Bear Unicorn", bull: z.type === "BULL_UNICORN" }));
+  smc.bulls.forEach(z => rows.push({ ...z, label: "+OB", bull: true }));
+  smc.bears.forEach(z => rows.push({ ...z, label: "-OB", bull: false }));
+  rows.forEach(z => { z.dist = p > z.top ? (p - z.top) / p * 100 : (p < z.bottom ? (z.bottom - p) / p * 100 : 0); });
+  rows.sort((x, y) => x.dist - y.dist);
+  $("liveOB").innerHTML = rows.length ? rows.map(z =>
+    `<div class="ob-row ${z.bull ? "ob-bull" : "ob-bear"}"><div><b>${fmt(z.bottom)} - ${fmt(z.top)}</b> <span class="sub">${z.label}</span></div>
+     <div>${z.dist === 0 ? '<b style="color:var(--yellow)">PRICE INSIDE</b>' : z.dist.toFixed(2) + "% away"}</div></div>`).join("")
+    : "No unmitigated order block near price right now.";
+}
+function renderLiqs() {
+  $("liqFeed").innerHTML = liqs.map(x =>
+    `<tr class="${x.sym === sel ? "big" : ""}"><td>${tstr(x.t)}</td><td>${x.coin}</td><td class="${x.side === "LONG" ? "down" : "up"}">${x.side}</td><td>${fmt(x.price)}</td><td>$${money(x.usd)}</td></tr>`).join("");
+  const l = liqStats(sel);
+  $("liqStat").innerHTML = `<b>${sel}</b> last 15m: <span class="down">Longs liquidated $${money(l.long15)}</span> · <span class="up">Shorts liquidated $${money(l.short15)}</span>
+    ${l.long15 >= l.thr ? " · 🔻 long flush (sweep of lows)" : ""}${l.short15 >= l.thr ? " · 🔺 short squeeze (sweep of highs)" : ""}`;
+}
+function renderWhaleSum() {
+  const w = whaleStats();
+  $("whaleSum").innerHTML = `10m whales: <span class="up">BUY $${money(w.buy)}</span> · <span class="down">SELL $${money(w.sell)}</span> · ${w.n} prints`;
+}
+function reevaluate() {
+  const k1 = kCache[key(sel, tf1)], k2 = kCache[key(sel, tf2)];
+  if (!k1 || !k2) return;
+  try {
+    const live = computeSignal(k1, k2, gatherExt(), htfObj);
+    results[sel] = { ...(results[sel] || {}), ...live.R, quant: live.quant };
+    updateHUD(live.R); renderMarket();
+  } catch (e) { console.error(e); }
+}
+setInterval(reevaluate, 5000);
+setInterval(() => { try { renderLiqs(); renderWhaleSum(); updateFwd(); } catch (e) {} }, 4000);
+setInterval(() => { if (sel) fetchBigPositions(sel); }, 60000);
+setInterval(() => { if (sel) refreshHTF(sel).then(reevaluate); }, 300000);
+
+/* ===== Forward tracker (real-time paper trading of every signal) ===== */
+let fwd = [];
+try { fwd = JSON.parse(localStorage.getItem("fwdTrades") || "[]"); } catch (e) {}
+const saveFwd = () => { try { localStorage.setItem("fwdTrades", JSON.stringify(fwd)); } catch (e) {} };
+function beep() {
+  try {
+    const ac = new (window.AudioContext || window.webkitAudioContext)(), o = ac.createOscillator(), g = ac.createGain();
+    o.connect(g); g.connect(ac.destination); o.frequency.value = 880; g.gain.value = 0.15; o.start();
+    setTimeout(() => { o.stop(); ac.close(); }, 250);
+  } catch (e) {}
+}
+function trackNewSignal(R) {
+  if (R.side === "WAIT") return;
+  const id = `${sel}_${tf2}_${R.candleT}_${R.side}`;
+  if (fwd.some(f => f.id === id)) return;
+  fwd.unshift({ id, sym: sel, tf: tf2, side: R.side, entry: R.entry, sl: R.sl, tp: R.tp, limit: R.limit, model: R.modelType,
+                score: +R.score.toFixed(1), t: Date.now(), status: R.limit ? "PENDING" : "OPEN", tp1: false, r: null });
+  if (fwd.length > 100) fwd.pop();
+  saveFwd(); renderFwd();
+  const al = $("alertOn"); if (al && al.checked) beep();
+}
+function updateFwd() {
+  let changed = false;
+  fwd.forEach(f => {
+    if (f.status !== "PENDING" && f.status !== "OPEN") return;
+    const p = prices[f.sym] && prices[f.sym].p; if (!p) return;
+    const Lg = f.side === "LONG";
+    if (f.status === "PENDING") {
+      if (Date.now() - f.t > 8 * TF_MS[f.tf]) { f.status = "EXPIRED"; changed = true; return; }
+      if (Lg ? p <= f.sl : p >= f.sl) { f.status = "CANCELLED"; changed = true; return; }
+      if (Lg ? p <= f.entry : p >= f.entry) { f.status = "OPEN"; changed = true; }
+      return;
+    }
+    const stop = f.tp1 ? f.entry : f.sl;
+    if (Lg ? p <= stop : p >= stop) { f.r = f.tp1 ? 0.75 : -1; f.status = f.tp1 ? "TP1+BE" : "SL"; changed = true; }
+    else if (!f.tp1 && (Lg ? p >= f.tp[0] : p <= f.tp[0])) { f.tp1 = true; changed = true; }
+    else if (f.tp1 && (Lg ? p >= f.tp[1] : p <= f.tp[1])) { f.r = 2.15; f.status = "TP2"; changed = true; }
+  });
+  if (changed) { saveFwd(); renderFwd(); }
+}
+function renderFwd() {
+  const done = fwd.filter(f => f.r !== null), wins = done.filter(f => f.r > 0), tot = done.reduce((a, f) => a + f.r, 0);
+  $("fwdStats").innerHTML = done.length
+    ? `Closed: <b>${done.length}</b> · Win rate <b>${(wins.length / done.length * 100).toFixed(0)}%</b> · Total <b class="${tot >= 0 ? "up" : "down"}">${tot >= 0 ? "+" : ""}${tot.toFixed(2)}R</b> (before fees) · Open/pending: ${fwd.filter(f => f.status === "OPEN" || f.status === "PENDING").length}`
+    : `No closed trades yet. Open/pending: ${fwd.filter(f => f.status === "OPEN" || f.status === "PENDING").length}. Price is checked every few seconds (fast wicks can be missed).`;
+  $("fwdTable").innerHTML = fwd.slice(0, 25).map(f => `<tr><td>${tstr(f.t)}</td><td>${f.sym.replace("USDT", "")} ${f.tf}</td>
+    <td class="${f.side === "LONG" ? "up" : "down"}" style="font-weight:700">${f.side}</td><td>${fmt(f.entry)}${f.limit ? " L" : ""}</td><td>${fmt(f.sl)}</td><td>${fmt(f.tp[0])}</td>
+    <td>${f.status}${f.tp1 && f.r === null ? " (TP1 ✓)" : ""}</td><td class="${f.r > 0 ? "up" : f.r < 0 ? "down" : ""}">${f.r === null ? "-" : f.r.toFixed(2)}</td></tr>`).join("")
+    || '<tr><td colspan="8" class="sub">Signals appear here automatically.</td></tr>';
+}
+$("fwdClear").onclick = () => { fwd = []; saveFwd(); renderFwd(); };
+
+/* ===== Backtest + auto-tune (walk-forward style: tune on first 60%, report last 40%) ===== */
+function simulate(H, L, C, i, c, maxBars = 48) {
+  const Lg = c.side === "LONG", risk = Math.abs(c.entry - c.sl), n = C.length;
+  if (!(risk > 0)) return null;
+  let j = i + 1, fillBar = i;
+  if (c.limit) {
+    let filled = false;
+    for (; j <= Math.min(n - 1, i + 8); j++) {
+      if (Lg ? L[j] <= c.entry : H[j] >= c.entry) { filled = true; break; }
+      if (Lg ? L[j] <= c.sl : H[j] >= c.sl) return null;
+    }
+    if (!filled) return null;
+    fillBar = j;
+  }
+  let stop = c.sl, tp1 = false, realized = 0;
+  const end = Math.min(n - 1, fillBar + maxBars), fee = FEE_RT * c.entry / risk;
+  for (let m = j; m <= end; m++) {
+    if (Lg ? L[m] <= stop : H[m] >= stop) return { R: (tp1 ? realized : -1) - fee, exit: m };
+    if (!tp1 && (Lg ? H[m] >= c.tp[0] : L[m] <= c.tp[0])) { tp1 = true; realized = 0.75; stop = c.entry; }
+    else if (tp1 && (Lg ? H[m] >= c.tp[1] : L[m] <= c.tp[1])) return { R: realized + 1.4 - fee, exit: m };
+  }
+  const un = (Lg ? C[end] - c.entry : c.entry - C[end]) / risk;
+  return { R: (tp1 ? realized + 0.5 * un : un) - fee, exit: end };
+}
+function btStats(tr) {
+  const n = tr.length; if (!n) return { n: 0, win: 0, avg: 0, pf: 0, tot: 0, dd: 0 };
+  let tot = 0, gp = 0, gl = 0, w = 0, peak = 0, dd = 0, cum = 0;
+  tr.forEach(t => { tot += t.R; if (t.R > 0) { gp += t.R; w++; } else gl -= t.R; cum += t.R; peak = Math.max(peak, cum); dd = Math.max(dd, peak - cum); });
+  return { n, win: w / n * 100, avg: tot / n, pf: gl > 0 ? gp / gl : (gp > 0 ? 99 : 0), tot, dd };
+}
+let btBest = null;
+async function runBacktest() {
+  const btn = $("btRun"), st = $("btStatus"); btn.disabled = true; $("btApply").disabled = true; btBest = null;
+  try {
+    st.textContent = "Downloading history...";
+    const rawK = await api(`/fapi/v1/klines?symbol=${sel}&interval=${tf2}&limit=1500`);
+    const hn = HTF_MAP[tf2]; let htf = null;
+    if (hn) { try { htf = makeHtf(closedOnly(await api(`/fapi/v1/klines?symbol=${sel}&interval=${hn}&limit=1000`))); } catch (e) {} }
+    const k = closedOnly(rawK), n = k.length;
+    const H = k.map(x => +x[2]), L = k.map(x => +x[3]), C = k.map(x => +x[4]), rows = [];
+    for (let i = 150; i < n - 2; i++) {
+      const w = k.slice(Math.max(0, i - 199), i + 1);
+      try { const R = computeSignal(w, w, null, htf).R; if (R.cand && R.gateOk) rows.push({ i, score: R.score, chop: R.chopStrict, cand: R.cand }); } catch (e) {}
+      if (i % 30 === 0) { st.textContent = `Scanning candles ${i - 150}/${n - 152}...`; await sleep(0); }
+    }
+    const cut = Math.floor(n * 0.6), res = [];
+    for (let t = 5; t <= 8.5; t += 0.5) {
+      const tr = []; let busy = -1;
+      rows.forEach(r => {
+        if (r.i <= busy || r.score < t + (r.chop ? 1.5 : 0)) return;
+        const o = simulate(H, L, C, r.i, r.cand); if (!o) return;
+        tr.push({ i: r.i, R: o.R }); busy = o.exit;
+      });
+      res.push({ t, all: btStats(tr), is: btStats(tr.filter(x => x.i < cut)), oos: btStats(tr.filter(x => x.i >= cut)) });
+    }
+    let best = null;
+    res.forEach(r => { if (r.is.n >= 6 && r.is.pf > 1 && r.is.tot > 0 && (!best || r.is.tot > best.is.tot)) best = r; });
+    $("btTable").innerHTML = res.map(r => `<tr class="${best && r.t === best.t ? "big" : ""}"><td>${r.t.toFixed(1)}</td><td>${r.all.n}</td><td>${r.all.win.toFixed(0)}%</td>
+      <td class="${r.all.avg >= 0 ? "up" : "down"}">${r.all.avg.toFixed(2)}</td><td>${r.all.pf.toFixed(2)}</td><td class="${r.all.tot >= 0 ? "up" : "down"}">${r.all.tot.toFixed(1)}</td><td>${r.all.dd.toFixed(1)}</td></tr>`).join("");
+    if (best) {
+      btBest = best.t; $("btApply").disabled = false;
+      const o = best.oos, good = o.n >= 3 && o.pf > 1;
+      $("btVerdict").innerHTML = `Best threshold on first 60% of data: <b>${best.t.toFixed(1)}</b> (PF ${best.is.pf.toFixed(2)}, ${best.is.n} trades).<br>
+        Unseen last 40%: <b>${o.n} trades · win ${o.win.toFixed(0)}% · avg ${o.avg.toFixed(2)}R · PF ${o.pf.toFixed(2)}</b> →
+        <b class="${good ? "up" : "down"}">${good ? "edge held up out-of-sample ✅" : "edge did NOT hold on unseen data ⚠️ - treat as unproven"}</b>`;
+    } else {
+      $("btVerdict").innerHTML = `<b class="down">No profitable threshold found for ${sel} ${tf2}.</b> Is pair/timeframe par live trade mat karo - dusra pair ya timeframe test karo.`;
+    }
+    st.textContent = `Done: ${rows.length} setups from ${n} candles.`;
+  } catch (e) { st.textContent = "Error: " + (e.message || e); console.error(e); }
+  finally { btn.disabled = false; }
+}
+$("btRun").onclick = runBacktest;
+$("btApply").onclick = () => { if (btBest !== null) { SIG_MIN = btBest; $("btStatus").textContent = `Min score set to ${btBest.toFixed(1)}`; reevaluate(); } };
 
 /* TAB SWITCHING SYSTEM */
 $("menuTabs").addEventListener("click", e => {
@@ -734,7 +1023,7 @@ function findSMCFootprints(T, O, H, L, C, a) {
   }
 
   breakers.forEach(br => {
-    const fvgMatch = [...fvgBull, ...fvgBear].find(f => Math.abs(f.mid - (br.top + br.bottom)/2) <= a[n-1] * 0.8);
+    const fvgMatch = (br.type === "bull_breaker" ? fvgBull : fvgBear).find(f => Math.abs(f.mid - (br.top + br.bottom)/2) <= a[n-1] * 0.8);
     if (fvgMatch) {
       unicorns.push({
         type: br.type === "bull_breaker" ? "BULL_UNICORN" : "BEAR_UNICORN",
@@ -1190,37 +1479,23 @@ async function loadData() {
     $("cv2Sym").textContent = sel; $("cv2Tf").textContent = tf2;
 
     const [r1, r2] = await Promise.all([
-      fetch(`${REST}/fapi/v1/klines?symbol=${sel}&interval=${tf1}&limit=500`).then(r => r.json()),
-      fetch(`${REST}/fapi/v1/klines?symbol=${sel}&interval=${tf2}&limit=500`).then(r => r.json())
+      api(`/fapi/v1/klines?symbol=${sel}&interval=${tf1}&limit=500`),
+      api(`/fapi/v1/klines?symbol=${sel}&interval=${tf2}&limit=500`)
     ]);
     if (my !== reqId) return;
 
     kCache[key(sel, tf1)] = r1;
     kCache[key(sel, tf2)] = r2;
-    listenCandleStream(sel, tf1);
+    listenCandleStream(sel, [tf1, tf2]);
 
-    const T = r2.map(x=>+x[0]), O = r2.map(x=>+x[1]), H = r2.map(x=>+x[2]), L = r2.map(x=>+x[3]), C = r2.map(x=>+x[4]), a = atr(H,L,C);
-    const smc = findSMCFootprints(T, O, H, L, C, a);
-    const heatmap = calculateHeatmap(H, L, C);
-    const quant = computeQuantWeights(r1);
-
-    const i = C.length - 1, price = C[i], A = a[i];
-
-    let side = "WAIT", modelType = "Normal Footprints";
-    const unicornBull = smc.unicorns.find(u => u.type === "BULL_UNICORN");
-    const unicornBear = smc.unicorns.find(u => u.type === "BEAR_UNICORN");
-
-    if (unicornBull && smc.dealing.isDiscount) {
-      side = "LONG"; modelType = "🦄 UNICORN SETUP (Discount <50%)";
-    } else if (unicornBear && smc.dealing.isPremium) {
-      side = "SHORT"; modelType = "🦄 UNICORN SETUP (Premium >50%)";
-    } else if (smc.bulls.length && smc.dealing.isDiscount && smc.is3CandleBull) {
-      side = "LONG"; modelType = "+OB + 3-Candle Confirmation";
-    } else if (smc.bears.length && smc.dealing.isPremium && smc.is3CandleBear) {
-      side = "SHORT"; modelType = "-OB + 3-Candle Confirmation";
-    }
-
-    results[sel] = { side, price, smc, heatmap, quant, modelType };
+    await refreshHTF(sel, my);
+    if (my !== reqId) return;
+    const live = computeSignal(r1, r2, gatherExt(), htfObj);
+    const R = live.R, smc = live.smc, quant = live.quant;
+    const heatmap = calculateHeatmap(r2.map(x=>+x[2]), r2.map(x=>+x[3]), r2.map(x=>+x[4]));
+    const side = R.side, modelType = R.modelType, price = R.price;
+    results[sel] = { ...R, heatmap, quant };
+    updateHUD(R);
 
     $("po3State").textContent = smc.po3;
     $("flowDom").textContent = smc.dealing.isDiscount ? "Discount Zone (<50%) 🟢" : "Premium Zone (>50%) 🔴";
@@ -1239,8 +1514,8 @@ async function loadData() {
         <div class="grid">
           <div class="item"><span>Live Price</span><b>${fmt(price)}</b></div>
           <div class="item"><span>Dealing Zone</span><b>${smc.dealing.isDiscount ? 'Discount (<50%)' : 'Premium (>50%)'}</b></div>
-          <div class="item"><span>Stop Loss (Structural)</span><b class="down">${side === "LONG" ? fmt(price - 1.4*A) : side === "SHORT" ? fmt(price + 1.4*A) : "-"}</b></div>
-          <div class="item"><span>Target (TP1 Liquidity)</span><b class="up">${side === "LONG" ? fmt(price + 2.8*A) : side === "SHORT" ? fmt(price - 2.8*A) : "-"}</b></div>
+          <div class="item"><span>Stop Loss (Structural)</span><b class="down">${side !== "WAIT" ? fmt(R.sl) : "-"}</b></div>
+          <div class="item"><span>Target (TP1 Liquidity)</span><b class="up">${side !== "WAIT" ? fmt(R.tp[1]) : "-"}</b></div>
         </div>
       </div>`;
 
@@ -1257,7 +1532,7 @@ async function loadData() {
     fetchBigPositions(sel);
     renderMarket();
   } catch(e) {
-    console.error(e);
+    showFeedError(e);
   } finally {
     if (my === reqId) { btn.disabled = false; btn.textContent = "Sync All Models"; }
   }
@@ -1283,90 +1558,136 @@ function renderReferencePoints(smc) {
 }
 
 async function fetchBigPositions(sym) {
-  try {
-    const [rPos, rOi] = await Promise.all([
-      fetch(`${REST}/futures/data/topLongShortPositionRatio?symbol=${sym}&period=5m&limit=1`).then(r => r.json()).catch(() => null),
-      fetch(`${REST}/fapi/v1/openInterest?symbol=${sym}`).then(r => r.json()).catch(() => null)
-    ]);
-    let longPct = 50, shortPct = 50, ratio = 1, oiUsd = 0;
-    if (rPos && rPos.length) {
-      ratio = +rPos[0].longShortRatio;
-      longPct = (+rPos[0].longAccount * 100);
-      shortPct = (+rPos[0].shortAccount * 100);
-    }
-    if (rOi && rOi.openInterest) {
-      const p = (prices[sym] && prices[sym].p) || 1;
-      oiUsd = +rOi.openInterest * p;
-    }
-    $("posBox").innerHTML = `
-      <div class="grid">
-        <div class="item"><span>Top Traders Long:</span><b class="up">${longPct.toFixed(1)}%</b></div>
-        <div class="item"><span>Top Traders Short:</span><b class="down">${shortPct.toFixed(1)}%</b></div>
-        <div class="item"><span>Long / Short Ratio:</span><b>${ratio.toFixed(2)}</b></div>
-        <div class="item"><span>Open Interest:</span><b style="color:var(--yellow)">$${money(oiUsd)}</b></div>
-      </div>`;
-  } catch(e){}
+  const q = p => api(p).catch(() => null);
+  const [rPos, rGlob, rOi, rPrem] = await Promise.all([
+    q(`/futures/data/topLongShortPositionRatio?symbol=${sym}&period=5m&limit=12`),
+    q(`/futures/data/globalLongShortAccountRatio?symbol=${sym}&period=5m&limit=1`),
+    q(`/futures/data/openInterestHist?symbol=${sym}&period=5m&limit=13`),
+    q(`/fapi/v1/premiumIndex?symbol=${sym}`)
+  ]);
+  if (sym !== sel) return;
+  const d = { topRatio: null, topLong: null, topShort: null, glob: null, oiUsd: null, oiChg: null, funding: null };
+  if (Array.isArray(rPos) && rPos.length) { const l = rPos[rPos.length - 1]; d.topRatio = +l.longShortRatio; d.topLong = +l.longAccount * 100; d.topShort = +l.shortAccount * 100; }
+  if (Array.isArray(rGlob) && rGlob.length) d.glob = +rGlob[rGlob.length - 1].longShortRatio;
+  if (Array.isArray(rOi) && rOi.length > 1) { const a = +rOi[0].sumOpenInterestValue, b = +rOi[rOi.length - 1].sumOpenInterestValue; d.oiUsd = b; d.oiChg = a > 0 ? (b - a) / a * 100 : null; }
+  if (rPrem && rPrem.lastFundingRate !== undefined) d.funding = +rPrem.lastFundingRate;
+  deriv = d;
+  const bias = d.topRatio === null ? "n/a" : d.topRatio >= 1.15 ? "Big traders NET LONG 🟢" : d.topRatio <= 0.87 ? "Big traders NET SHORT 🔴" : "Balanced ⚪";
+  $("posBox").innerHTML = `
+    <div class="grid">
+      <div class="item"><span>Top Traders Long:</span><b class="up">${d.topLong === null ? "-" : d.topLong.toFixed(1) + "%"}</b></div>
+      <div class="item"><span>Top Traders Short:</span><b class="down">${d.topShort === null ? "-" : d.topShort.toFixed(1) + "%"}</b></div>
+      <div class="item"><span>Top L/S Position Ratio:</span><b>${d.topRatio === null ? "-" : d.topRatio.toFixed(2)}</b></div>
+      <div class="item"><span>Retail (all accounts) L/S:</span><b>${d.glob === null ? "-" : d.glob.toFixed(2)}</b></div>
+      <div class="item"><span>Open Interest:</span><b style="color:var(--yellow)">${d.oiUsd === null ? "-" : "$" + money(d.oiUsd)}</b></div>
+      <div class="item"><span>OI change (1h):</span><b class="${d.oiChg >= 0 ? "up" : "down"}">${d.oiChg === null ? "-" : (d.oiChg >= 0 ? "+" : "") + d.oiChg.toFixed(2) + "%"}</b></div>
+      <div class="item"><span>Funding rate:</span><b class="${d.funding >= 0 ? "up" : "down"}">${d.funding === null ? "-" : (d.funding * 100).toFixed(4) + "%"}</b></div>
+      <div class="item"><span>Read:</span><b style="font-size:12px">${bias}</b></div>
+    </div>`;
+  reevaluate();
 }
 
-function listenCandleStream(sym, tf) {
-  if (wsCandle) { try { wsCandle.close(); } catch(e){} }
-  wsCandle = new WebSocket(`${WSB}${sym.toLowerCase()}@kline_${tf}`);
-  wsCandle.onopen = () => $("dCandle").classList.add("on");
-  wsCandle.onmessage = e => {
-    const k = JSON.parse(e.data).k;
-    if (!k) return;
-    const cObj = [+k.t, +k.o, +k.h, +k.l, +k.c, +k.v, +k.T];
-    const arr = kCache[key(sym, tf)];
-    if (arr) {
+let wsCandles = [];
+function listenCandleStream(sym, tfs) {
+  wsCandles.forEach(w => { try { w.close(); } catch(e){} }); wsCandles = [];
+  [...new Set(tfs)].forEach(tf => {
+    const ws = new WebSocket(`${WSB}${sym.toLowerCase()}@kline_${tf}`);
+    ws.onopen = () => $("dCandle").classList.add("on");
+    ws.onmessage = e => {
+      const k = JSON.parse(e.data).k; if (!k) return;
+      const cObj = [+k.t, +k.o, +k.h, +k.l, +k.c, +k.v, +k.T];
+      const arr = kCache[key(sym, tf)]; if (!arr) return;
       if (arr[arr.length - 1][0] === cObj[0]) arr[arr.length - 1] = cObj;
       else { arr.push(cObj); arr.shift(); }
-      drawChart1();
-      drawChart2();
-    }
-  };
-  wsCandle.onclose = () => $("dCandle").classList.remove("on");
+      drawChart1(); drawChart2();
+      if (k.x && sym === sel) reevaluate();
+    };
+    ws.onclose = () => { if (wsCandles.every(w => w.readyState !== 1)) $("dCandle").classList.remove("on"); };
+    wsCandles.push(ws);
+  });
 }
 
 function connectWhalesAndFlow() {
   if (wsAgg) try { wsAgg.close(); } catch(e){}
   liveBuyTotal = 0; liveSellTotal = 0; recentTrades = [];
-  wsAgg = new WebSocket(WSB + sel.toLowerCase() + "@aggTrade");
+  const sym = sel; let lastUi = 0, whaleDirty = false;
+  const whaleMin = () => {
+    const n = recentTrades.length; if (n < 30) return 25000;
+    const mean = recentTrades.reduce((a, t) => a + t.usd, 0) / n;
+    return Math.max(10000, Math.min(250000, mean * 15));   // adapts per coin
+  };
+  wsAgg = new WebSocket(WSB + sym.toLowerCase() + "@aggTrade");
   wsAgg.onopen = () => $("dFlow").classList.add("on");
+  wsAgg.onclose = () => { if (sym === sel) $("dFlow").classList.remove("on"); };
   wsAgg.onmessage = ev => {
-    const d = JSON.parse(ev.data);
-    const usd = +d.p * +d.q;
-    const isBuyer = !d.m;
+    if (sym !== sel) return;
+    const d = JSON.parse(ev.data), usd = +d.p * +d.q, isBuyer = !d.m;
     if (isBuyer) liveBuyTotal += usd; else liveSellTotal += usd;
-
     recentTrades.push({ isBuyer, usd });
     if (recentTrades.length > 250) {
       const old = recentTrades.shift();
-      if (old.isBuyer) liveBuyTotal = Math.max(0, liveBuyTotal - old.usd);
-      else liveSellTotal = Math.max(0, liveSellTotal - old.usd);
+      if (old.isBuyer) liveBuyTotal = Math.max(0, liveBuyTotal - old.usd); else liveSellTotal = Math.max(0, liveSellTotal - old.usd);
     }
-    const total = liveBuyTotal + liveSellTotal;
-    if (total > 0) {
-      const bPct = (liveBuyTotal / total * 100).toFixed(1);
-      const sPct = (100 - bPct).toFixed(1);
-      $("flowBuy").style.width = `${bPct}%`;
-      $("flowBuy").textContent = `${bPct}% BUY`;
-      $("flowSell").style.width = `${sPct}%`;
-      $("flowSell").textContent = `${sPct}% SELL`;
-      $("liveBuyVol").textContent = "$" + money(liveBuyTotal);
-      $("liveSellVol").textContent = "$" + money(liveSellTotal);
-    }
-
-    if (usd >= 25000) {
+    const th = whaleMin();
+    if (usd >= th) {
       whales.unshift({ t: d.T, side: isBuyer ? "BUY" : "SELL", price: +d.p, usd });
       if (whales.length > 30) whales.pop();
-      $("whaleFeed").innerHTML = whales.slice(0, 20).map(w =>
-        `<tr class="${w.usd >= 100000 ? 'big' : ''}">
-          <td>${tstr(w.t)}</td>
-          <td class="${w.side === 'BUY' ? 'up' : 'down'}" style="font-weight:700">${w.side === 'BUY' ? '🟢 BUY' : '🔴 SELL'}</td>
-          <td>${fmt(w.price)}</td><td>${w.usd >= 100000 ? '🐋 ' : ''}$${money(w.usd)}</td>
-        </tr>`
-      ).join("");
+      whaleLog.push({ t: d.T, sym, side: isBuyer ? "BUY" : "SELL", usd });
+      if (whaleLog.length > 600) whaleLog.shift();
+      whaleDirty = true;
     }
+    const now = Date.now();
+    if (now - lastUi < 300) return;
+    lastUi = now;
+    const total = liveBuyTotal + liveSellTotal;
+    if (total > 0) {
+      const bPct = (liveBuyTotal / total * 100).toFixed(1), sPct = (100 - bPct).toFixed(1);
+      $("flowBuy").style.width = `${bPct}%`; $("flowBuy").textContent = `${bPct}% BUY`;
+      $("flowSell").style.width = `${sPct}%`; $("flowSell").textContent = `${sPct}% SELL`;
+      $("liveBuyVol").textContent = "$" + money(liveBuyTotal); $("liveSellVol").textContent = "$" + money(liveSellTotal);
+    }
+    $("whaleMinTxt").textContent = "$" + money(th);
+    if (whaleDirty) {
+      whaleDirty = false;
+      $("whaleFeed").innerHTML = whales.slice(0, 20).map(w => `<tr class="${w.usd >= th * 4 ? "big" : ""}">
+        <td>${tstr(w.t)}</td><td class="${w.side === "BUY" ? "up" : "down"}" style="font-weight:700">${w.side === "BUY" ? "🟢 BUY" : "🔴 SELL"}</td>
+        <td>${fmt(w.price)}</td><td>${w.usd >= th * 4 ? "🐋 " : ""}$${money(w.usd)}</td></tr>`).join("");
+      renderWhaleSum();
+    }
+  };
+  connectBook();
+}
+
+/* Live order book: large resting orders (walls) + bid/ask imbalance */
+let wsBook = null, wallSeen = {}, lastBookUi = 0;
+function connectBook() {
+  if (wsBook) try { wsBook.close(); } catch(e){}
+  book = { ok: false, imb: 0, bidUsd: 0, askUsd: 0, mid: 0, walls: [] }; wallSeen = {};
+  const sym = sel;
+  wsBook = new WebSocket(`${WSB}${sym.toLowerCase()}@depth20@500ms`);
+  wsBook.onmessage = ev => {
+    if (sym !== sel) return;
+    const d = JSON.parse(ev.data);
+    const bids = (d.b || d.bids || []).map(x => [+x[0], +x[1]]), asks = (d.a || d.asks || []).map(x => [+x[0], +x[1]]);
+    if (!bids.length || !asks.length) return;
+    const bu = bids.map(x => x[0] * x[1]), au = asks.map(x => x[0] * x[1]);
+    const bidUsd = bu.reduce((a, b) => a + b, 0), askUsd = au.reduce((a, b) => a + b, 0);
+    const mid = (bids[0][0] + asks[0][0]) / 2, mean = (bidUsd + askUsd) / (bu.length + au.length);
+    const wallMin = Math.max(mean * 3, 5000), now = Date.now(), seen = {}, walls = [];
+    const scan = (arr, us, side) => arr.forEach((x, i) => {
+      if (us[i] < wallMin) return;
+      const k = side + x[0]; seen[k] = wallSeen[k] || now;
+      walls.push({ side, price: x[0], usd: us[i], age: (now - seen[k]) / 1000, dist: (x[0] - mid) / mid * 100 });
+    });
+    scan(bids, bu, "bid"); scan(asks, au, "ask"); wallSeen = seen;
+    book = { ok: true, imb: (bidUsd - askUsd) / (bidUsd + askUsd), bidUsd, askUsd, mid, walls };
+    if (now - lastBookUi < 1000) return; lastBookUi = now;
+    const bp = (bidUsd / (bidUsd + askUsd) * 100).toFixed(0);
+    const rows = walls.sort((a, b) => b.usd - a.usd).slice(0, 6).map(w =>
+      `<div class="wall ${w.side}"><span>${w.side === "bid" ? "🟢 BID wall" : "🔴 ASK wall"} ${fmt(w.price)}</span><span>$${money(w.usd)} · ${w.dist >= 0 ? "+" : ""}${w.dist.toFixed(2)}% · ${w.age >= 15 ? "stable " + w.age.toFixed(0) + "s" : "new (may be spoof)"}</span></div>`).join("");
+    $("bookBox").innerHTML = `<div class="flow"><div style="width:${bp}%;background:var(--green);color:#111">${bp}% BIDS $${money(bidUsd)}</div><div style="width:${100 - bp}%;background:var(--red);color:#fff">${100 - bp}% ASKS $${money(askUsd)}</div></div>
+      <div style="margin-top:8px">${rows || '<span class="sub">No big walls in top 20 levels.</span>'}</div>
+      <div class="sub" style="margin-top:6px">Top-20 level depth. Walls can be pulled (spoofing) - trust ones marked stable.</div>`;
   };
 }
 
@@ -1471,20 +1792,8 @@ async function runScan() {
   for (let s of queue) {
     if (my !== scanId) break;
     try {
-      const res = await fetch(`${REST}/fapi/v1/klines?symbol=${s}&interval=${tf2}&limit=80`);
-      const k = await res.json();
-      const T = k.map(x=>+x[0]), O = k.map(x=>+x[1]), H = k.map(x=>+x[2]), L = k.map(x=>+x[3]), C = k.map(x=>+x[4]), a = atr(H,L,C);
-      const smc = findSMCFootprints(T, O, H, L, C, a);
-      let side = "WAIT", modelType = "Normal";
-      if (smc.unicorns.length) {
-        side = smc.unicorns[0].type === "BULL_UNICORN" ? "LONG" : "SHORT";
-        modelType = "🦄 UNICORN";
-      } else if (smc.bulls.length && smc.dealing.isDiscount) {
-        side = "LONG"; modelType = "+OB";
-      } else if (smc.bears.length && smc.dealing.isPremium) {
-        side = "SHORT"; modelType = "-OB";
-      }
-      results[s] = { side, smc, modelType };
+      const k = await api(`/fapi/v1/klines?symbol=${s}&interval=${tf2}&limit=150`);
+      results[s] = computeSignal(k, k, null).R;
       await sleep(35);
     } catch(e){}
   }
@@ -1552,9 +1861,8 @@ async function init() {
     renderJournal();
   } catch(e){}
 
-  updateKillzones();
-  const r = await fetch(`${REST}/fapi/v1/ticker/24hr`);
-  const data = await r.json();
+  updateKillzones(); renderFwd();
+  const data = await api("/fapi/v1/ticker/24hr");
   const rows = data.filter(d => d.symbol.endsWith("USDT")).sort((a,b) => +b.quoteVolume - +a.quoteVolume).slice(0, 150);
   coins = rows.map(x => ({ symbol: x.symbol }));
   rows.forEach(r => { prices[r.symbol] = { p: +r.lastPrice, o: +r.openPrice, q: +r.quoteVolume }; });
@@ -1576,17 +1884,16 @@ async function init() {
   const wsLiq = new WebSocket(WSB + "!forceOrder@arr");
   wsLiq.onmessage = ev => {
     const o = JSON.parse(ev.data).o, px = +o.ap || +o.p;
-    liqs.unshift({ t: o.T, coin: o.s.replace("USDT",""), side: o.S === "SELL" ? "LONG" : "SHORT", price: px, usd: px * +o.q });
-    if (liqs.length > 30) liqs.pop();
-    $("liqFeed").innerHTML = liqs.map(x =>
-      `<tr><td>${tstr(x.t)}</td><td>${x.coin}</td><td class="${x.side==='LONG'?'down':'up'}">${x.side}</td><td>${fmt(x.price)}</td><td>$${money(x.usd)}</td></tr>`
-    ).join("");
+    const e = { t: o.T, sym: o.s, coin: o.s.replace("USDT",""), side: o.S === "SELL" ? "LONG" : "SHORT", price: px, usd: px * +o.q };
+    liqs.unshift(e); if (liqs.length > 40) liqs.pop();
+    liqLog.push(e); if (liqLog.length > 2000) liqLog.shift();
+    renderLiqs();
   };
 
   connectWhalesAndFlow();
   loadData();
 }
-init();
+init().catch(showFeedError);
 </script>
 </body>
 </html>
